@@ -91,7 +91,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   protected final CollectionAction action;
 
-  private static String PROPERTY_PREFIX = "property.";
+  public static String PROPERTY_PREFIX = "property.";
 
   public CollectionAdminRequest(CollectionAction action) {
     this("/admin/collections", action);

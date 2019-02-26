@@ -68,4 +68,7 @@ public interface UpdateParams
 
   /** Return versions of updates? */
   public static final String VERSIONS = "versions";
+
+  /** Ignore the "readOnly" collection status. */
+  public static final String READ_ONLY_IGNORE = "readOnlyIgnore";
 }
