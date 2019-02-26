@@ -782,6 +782,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
+   * Returns a SolrRequest to reindex a collection
+   */
+  public static ReindexCollection reindexCollection(String collection) {
+    return new ReindexCollection(collection);
+  }
+
+  public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
+
+    private ReindexCollection(String collection) {
+      super(CollectionAction.REINDEX_COLLECTION, collection);
+    }
+  }
+
+  /**
    * Returns a SolrRequest to delete a collection
    */
   public static Delete deleteCollection(String collection) {
