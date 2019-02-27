@@ -76,6 +76,7 @@ import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -530,7 +531,21 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams(), m,
           ReindexCollectionCmd.ABORT,
           ReindexCollectionCmd.KEEP_SOURCE,
-          ReindexCollectionCmd.TARGET);
+          ReindexCollectionCmd.TARGET,
+          ZkStateReader.CONFIGNAME_PROP,
+          NUM_SLICES,
+          NRT_REPLICAS,
+          PULL_REPLICAS,
+          TLOG_REPLICAS,
+          REPLICATION_FACTOR,
+          MAX_SHARDS_PER_NODE,
+          POLICY,
+          CREATE_NODE_SET,
+          CREATE_NODE_SET_SHUFFLE,
+          AUTO_ADD_REPLICAS,
+          CommonParams.ROWS,
+          CommonParams.Q);
+      copyPropertiesWithPrefix(req.getParams(), m, "router.");
       return m;
     }),
 

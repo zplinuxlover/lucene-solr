@@ -789,9 +789,55 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
+    String target;
+    String query;
+    String configName;
+    Boolean keepSource;
+    Integer batchSize;
 
     private ReindexCollection(String collection) {
       super(CollectionAction.REINDEX_COLLECTION, collection);
+    }
+
+    public ReindexCollection setTarget(String target) {
+      this.target = target;
+      return this;
+    }
+
+    public ReindexCollection setQuery(String query) {
+      this.query = query;
+      return this;
+    }
+
+    public ReindexCollection setKeepSource(boolean keepSource) {
+      this.keepSource = keepSource;
+      return this;
+    }
+
+    public ReindexCollection setBatchSize(int batchSize) {
+      this.batchSize = batchSize;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      if (target != null) {
+        params.set("target", target);
+      }
+      if (configName != null) {
+        params.set(ZkStateReader.CONFIGNAME_PROP, configName);
+      }
+      if (query != null) {
+        params.set(CommonParams.Q, query);
+      }
+      if (keepSource != null) {
+        params.set("keepSource", keepSource);
+      }
+      if (batchSize != null) {
+        params.set(CommonParams.ROWS, batchSize);
+      }
+      return params;
     }
   }
 
