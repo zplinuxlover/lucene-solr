@@ -40,7 +40,6 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -237,8 +236,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
       (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD,
-          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS,
-          UpdateParams.READ_ONLY_IGNORE);
+          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS);
 
     CoreContainer cc = req.getCore().getCoreContainer();
 
@@ -255,10 +253,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       replicaType = cloudDesc.getReplicaType();
       DocCollection coll = zkController.getClusterState().getCollectionOrNull(collection);
       if (coll != null) {
-        // check readOnly property in coll state, unless overridden by params
-        if (!req.getParams().getBool(UpdateParams.READ_ONLY_IGNORE, false)) {
-          readOnly = coll.getBool(CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP, false);
-        }
+        // check readOnly property in coll state
+        readOnly = coll.getBool(ZkStateReader.READ_ONLY, false);
       }
     } else {
       collection = null;
