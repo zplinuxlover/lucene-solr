@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -45,7 +46,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -60,7 +60,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
@@ -637,16 +636,16 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     Replica leader
         = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
 
-    long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+    final AtomicReference<Long> coreStartTime = new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
 
     // Check for value change
     CollectionAdminRequest.modifyCollection(collectionName,
-        Collections.singletonMap(CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP, "true"))
+        Collections.singletonMap(ZkStateReader.READ_ONLY, "true"))
         .process(solrClient);
 
     DocCollection coll = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
-    assertNotNull(coll.toString(), coll.getProperties().get(CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP));
-    assertEquals(coll.toString(), coll.getProperties().get(CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP).toString(), "true");
+    assertNotNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
+    assertEquals(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY).toString(), "true");
 
     // wait for the expected collection reload
     RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
@@ -657,8 +656,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         log.warn("Exception getting core start time: {}", e.getMessage());
         return false;
       }
-      return restartTime > coreStartTime;
+      return restartTime > coreStartTime.get();
     });
+
+    coreStartTime.set(getCoreStatus(leader).getCoreStartTime().getTime());
 
     // check for docs - reloading should have committed the new docs
     // this also verifies that searching works in read-only mode
@@ -703,24 +704,25 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       // expected - ignore
     }
 
-    // check that the override works
-    log.info("=== readOnlyIgnore override test");
-    UpdateRequest ureq = new UpdateRequest();
-    ureq.add(new SolrInputDocument("id", "shouldWork"));
-    ureq.setParam(UpdateParams.READ_ONLY_IGNORE, "true");
-    NamedList<Object> res = solrClient.request(ureq, collectionName);
-    ureq = new UpdateRequest();
-    ureq.deleteById("shouldWork");
-    ureq.setParam(UpdateParams.READ_ONLY_IGNORE, "true");
-    res = solrClient.request(ureq, collectionName);
-
     // Check for removing value
     // setting to empty string is equivalent to removing the property, see SOLR-12507
     CollectionAdminRequest.modifyCollection(collectionName,
-        Collections.singletonMap(CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP, ""))
+        Collections.singletonMap(ZkStateReader.READ_ONLY, ""))
         .process(cluster.getSolrClient());
     coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
-    assertNull(coll.toString(), coll.getProperties().get(CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP));
+    assertNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
+
+    // wait for the expected collection reload
+    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
+      long restartTime = 0;
+      try {
+        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+      } catch (Exception e) {
+        log.warn("Exception getting core start time: {}", e.getMessage());
+        return false;
+      }
+      return restartTime > coreStartTime.get();
+    });
 
     // check that updates are working now
     docs.clear();

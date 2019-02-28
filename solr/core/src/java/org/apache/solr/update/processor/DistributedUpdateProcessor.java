@@ -40,7 +40,6 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -185,7 +184,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private Set<String> skippedCoreNodeNames;
   private boolean isIndexChanged = false;
 
-  private boolean readOnly = false;
+  private boolean readOnlyCollection = false;
 
   /**
    * Number of times requests forwarded to some other shard's leader can be retried
@@ -237,8 +236,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
       (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD,
-          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS,
-          UpdateParams.READ_ONLY_IGNORE);
+          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS);
 
     CoreContainer cc = req.getCore().getCoreContainer();
 
@@ -255,10 +253,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       replicaType = cloudDesc.getReplicaType();
       DocCollection coll = zkController.getClusterState().getCollectionOrNull(collection);
       if (coll != null) {
-        // check readOnly property in coll state, unless overridden by params
-        if (!req.getParams().getBool(UpdateParams.READ_ONLY_IGNORE, false)) {
-          readOnly = coll.getBool(CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP, false);
-        }
+        // check readOnly property in coll state
+        readOnlyCollection = coll.getBool(ZkStateReader.READ_ONLY, false);
       }
     } else {
       collection = null;
@@ -278,6 +274,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       nextInChain = nextInChain.next;
     }
     cloneRequiredOnLeader = shouldClone;
+  }
+
+  private boolean isReadOnly() {
+    return readOnlyCollection || !req.getCore().indexEnabled;
   }
 
   private List<Node> setupRequest(String id, SolrInputDocument doc) {
@@ -682,7 +682,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     assert TestInjection.injectFailUpdateRequests();
 
-    if (readOnly) {
+    if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
 
@@ -1434,7 +1434,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     assert TestInjection.injectFailUpdateRequests();
 
-    if (readOnly) {
+    if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
 
@@ -1947,7 +1947,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     assert TestInjection.injectFailUpdateRequests();
 
-    if (readOnly) {
+    if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
 
@@ -2063,7 +2063,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    if (readOnly) {
+    if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
     super.processMergeIndexes(cmd);
@@ -2071,7 +2071,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processRollback(RollbackUpdateCommand cmd) throws IOException {
-    if (readOnly) {
+    if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
     super.processRollback(cmd);
