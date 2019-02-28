@@ -543,6 +543,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           AUTO_ADD_REPLICAS,
+          "shards",
           CommonParams.ROWS,
           CommonParams.Q);
       copyPropertiesWithPrefix(req.getParams(), m, "router.");

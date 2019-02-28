@@ -306,6 +306,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slice.getLeader();
   }
 
+  public boolean isReadOnly() {
+    return readOnly;
+  }
+
   /**
    * Check that all replicas in a collection are live
    *

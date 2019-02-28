@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -88,7 +90,21 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   public static final String CHK_COL_PREFIX = ".reindex_ck_";
   public static final String REINDEXING_PROP = CollectionAdminRequest.PROPERTY_PREFIX + "reindexing";
   public static final String REINDEX_PHASE_PROP = CollectionAdminRequest.PROPERTY_PREFIX + "reindex_phase";
-  public static final String READONLY_PROP = CollectionAdminRequest.PROPERTY_PREFIX + ZkStateReader.READ_ONLY_PROP;
+
+  private static final List<String> COLLECTION_PARAMS = Arrays.asList(
+      ZkStateReader.CONFIGNAME_PROP,
+      ZkStateReader.NUM_SHARDS_PROP,
+      ZkStateReader.NRT_REPLICAS,
+      ZkStateReader.PULL_REPLICAS,
+      ZkStateReader.TLOG_REPLICAS,
+      ZkStateReader.REPLICATION_FACTOR,
+      ZkStateReader.MAX_SHARDS_PER_NODE,
+      "shards",
+      Policy.POLICY,
+      CollectionAdminParams.CREATE_NODE_SET_PARAM,
+      CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
+      ZkStateReader.AUTO_ADD_REPLICAS
+  );
 
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -182,7 +198,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         TARGET_COL_PREFIX + collection + "_" + seq : target;
     String chkCollection = CHK_COL_PREFIX + collection + "_" + seq;
     String daemonUrl = null;
-
+    Exception exc = null;
     try {
       // 0. set up target and checkpoint collections
       NamedList<Object> cmdResults = new NamedList<>();
@@ -222,8 +238,11 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       for (String key : message.keySet()) {
         if (key.startsWith("router.")) {
           propMap.put(key, message.getStr(key));
+        } else if (COLLECTION_PARAMS.contains(key)) {
+          propMap.put(key, message.get(key));
         }
       }
+
       propMap.put(ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
       propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
       if (rf != null) {
@@ -276,7 +295,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       cmd = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
           ZkStateReader.COLLECTION_PROP, collection,
-          READONLY_PROP, "true");
+          ZkStateReader.READ_ONLY, "true");
       ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
 
       // 2. copy the documents to target
@@ -349,7 +368,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
             ZkStateReader.COLLECTION_PROP, collection,
             REINDEXING_PROP, State.FINISHED.toLower(),
-            READONLY_PROP, "");
+            ZkStateReader.READ_ONLY, "");
         ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
       } else {
         cmd = new ZkNodeProps(
@@ -362,11 +381,17 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
       results.add(State.FINISHED.toLower(), collection);
     } catch (Exception e) {
+      log.warn("Error during reindexing of " + collection, e);
+      exc = e;
       aborted = true;
+      throw e;
     } finally {
       if (aborted) {
         cleanup(collection, targetCollection, chkCollection, daemonUrl, targetCollection);
         results.add(State.ABORTED.toLower(), collection);
+        if (exc != null) {
+          results.add("error", exc.toString());
+        }
       }
     }
   }
@@ -501,7 +526,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     }
     ClusterState clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
     NamedList<Object> cmdResults = new NamedList<>();
-    if (!collection.equals(targetCollection)) {
+    if (!collection.equals(targetCollection) && clusterState.hasCollection(targetCollection)) {
       ZkNodeProps cmd = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
           CommonParams.NAME, targetCollection,
@@ -514,7 +539,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
         ZkStateReader.COLLECTION_PROP, collection,
         REINDEXING_PROP, State.ABORTED.toLower(),
-        READONLY_PROP, "");
+        ZkStateReader.READ_ONLY, "");
     ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
   }
 }

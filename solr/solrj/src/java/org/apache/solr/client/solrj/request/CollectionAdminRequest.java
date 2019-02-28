@@ -796,6 +796,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     String configName;
     Boolean keepSource;
     Integer batchSize;
+    Map<String, Object> collectionParams = new HashMap<>();
 
     private ReindexCollection(String collection) {
       super(CollectionAction.REINDEX_COLLECTION, collection);
@@ -821,24 +822,25 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public ReindexCollection setConfigName(String configName) {
+      this.configName = configName;
+      return this;
+    }
+
+    public ReindexCollection setCollectionParam(String key, Object value) {
+      this.collectionParams.put(key, value);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      if (target != null) {
-        params.set("target", target);
-      }
-      if (configName != null) {
-        params.set(ZkStateReader.CONFIGNAME_PROP, configName);
-      }
-      if (query != null) {
-        params.set(CommonParams.Q, query);
-      }
-      if (keepSource != null) {
-        params.set("keepSource", keepSource);
-      }
-      if (batchSize != null) {
-        params.set(CommonParams.ROWS, batchSize);
-      }
+      params.setNonNull("target", target);
+      params.setNonNull(ZkStateReader.CONFIGNAME_PROP, configName);
+      params.setNonNull(CommonParams.Q, query);
+      params.setNonNull("keepSource", keepSource);
+      params.setNonNull(CommonParams.ROWS, batchSize);
+      collectionParams.forEach((k, v) -> params.setNonNull(k, v));
       return params;
     }
   }
