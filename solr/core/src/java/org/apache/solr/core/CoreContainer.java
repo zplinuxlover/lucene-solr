@@ -1457,19 +1457,19 @@ public class CoreContainer {
           docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
           // turn off indexing now, before the new core is registered
           if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
-            newCore.indexEnabled = false;
+            newCore.readOnly = true;
           }
         }
 
         registerCore(cd, newCore, false, false);
 
         // force commit on old core if the new one is readOnly and prevent any new updates
-        if (!newCore.indexEnabled) {
+        if (newCore.readOnly) {
           RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
           if (iwRef != null) {
             IndexWriter iw = iwRef.get();
             // switch old core to readOnly
-            core.indexEnabled = false;
+            core.readOnly = true;
             try {
               if (iw != null) {
                 iw.commit();

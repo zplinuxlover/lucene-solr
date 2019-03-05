@@ -279,6 +279,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return router;
   }
 
+  public boolean isReadOnly() {
+    return readOnly;
+  }
+
   @Override
   public String toString() {
     return "DocCollection("+name+"/" + znode + "/" + znodeVersion + ")=" + JSONUtil.toJSON(this);
@@ -304,10 +308,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Slice slice = getSlice(sliceName);
     if (slice == null) return null;
     return slice.getLeader();
-  }
-
-  public boolean isReadOnly() {
-    return readOnly;
   }
 
   /**

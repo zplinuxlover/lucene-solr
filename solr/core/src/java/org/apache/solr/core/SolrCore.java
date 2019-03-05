@@ -236,7 +236,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private String metricTag = Integer.toHexString(hashCode());
 
   public boolean searchEnabled = true;
-  public volatile boolean indexEnabled = true;
+  public boolean indexEnabled = true;
+  public volatile boolean readOnly = false;
 
   public Set<String> getMetricNames() {
     return metricNames;

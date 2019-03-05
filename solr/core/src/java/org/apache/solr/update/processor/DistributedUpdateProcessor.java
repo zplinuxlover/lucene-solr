@@ -254,7 +254,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       DocCollection coll = zkController.getClusterState().getCollectionOrNull(collection);
       if (coll != null) {
         // check readOnly property in coll state
-        readOnlyCollection = coll.getBool(ZkStateReader.READ_ONLY, false);
+        readOnlyCollection = coll.isReadOnly();
       }
     } else {
       collection = null;
@@ -277,7 +277,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private boolean isReadOnly() {
-    return readOnlyCollection || !req.getCore().indexEnabled;
+    return readOnlyCollection || req.getCore().readOnly;
   }
 
   private List<Node> setupRequest(String id, SolrInputDocument doc) {

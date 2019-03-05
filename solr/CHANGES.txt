@@ -64,6 +64,14 @@ New Features
 
 * SOLR-13261: Make SortableTextField work with export/streaming
 
+* SOLR-10436: Add hashRollup Streaming Expression (Joel Bernstein)
+
+* SOLR-13276: Adding Http2 equivalent classes of CloudSolrClient and HttpClusterStateProvider (Cao Manh Dat)
+
+* SOLR-13287: Allow zplot to visualize probability distributions in Apache Zeppelin (Joel Bernstein)
+
+* SOLR-13271: Read-only mode for SolrCloud collections (ab, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -78,6 +86,17 @@ Bug Fixes
 
 * SOLR-11883: 500 code on functional query syntax errors and parameter dereferencing errors 
 (Munendra S N via Mikhail Khludnev)
+
+* SOLR-13234: Prometheus Metric Exporter not threadsafe. This changes the prometheus exporter to collect metrics
+  from Solr on a fixed interval controlled by this tool and prevents concurrent collections. This change also improves
+  performance slightly by using the cluster state instead of sending multiple HTTP requests to each node to lookup
+  all the cores.
+  (Danyal Prout via shalin)
+
+* SOLR-9882: 500 error code on breaching timeAllowed by core and distributed (fsv) search, 
+  old and json facets (Mikhail Khludnev)
+
+* SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
 
 Improvements
 ----------------------
