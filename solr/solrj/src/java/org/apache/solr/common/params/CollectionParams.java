@@ -122,6 +122,7 @@ public interface CollectionParams {
     NONE(false, LockLevel.NONE),
     // TODO: not implemented yet
     MERGESHARDS(true, LockLevel.SHARD),
+    COLSTATUS(true, LockLevel.NONE),
     REINDEX_COLLECTION(true, LockLevel.COLLECTION)
     ;
     public final boolean isWrite;

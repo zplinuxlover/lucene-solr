@@ -14,29 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
 
-import org.apache.lucene.queryparser.xml.CoreParser;
-import org.apache.lucene.queryparser.xml.TestCoreParser;
+package org.apache.solr.cloud;
 
-public class TestXmlQParser extends TestCoreParser {
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
-  private CoreParser solrCoreParser;
+@LuceneTestCase.Slow
+@SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest {
 
   @Override
-  protected CoreParser coreParser() {
-    if (solrCoreParser == null) {
-      solrCoreParser = new SolrCoreParser(
-          super.defaultField(),
-          super.analyzer(),
-          null);
-    }
-    return solrCoreParser;
+  protected boolean useTlogReplicas() {
+    return true;
   }
-
-  //public void testSomeOtherQuery() {
-  //  Query q = parse("SomeOtherQuery.xml");
-  //  dumpResults("SomeOtherQuery", q, ?);
-  //}
 
 }
