@@ -378,8 +378,9 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         aborted = true;
         return;
       }
-      TestInjection.injectReindexFailure();
       log.debug("- finished copying from " + collection + " to " + targetCollection);
+      // fail here or earlier during daemon run
+      TestInjection.injectReindexFailure();
 
       // 5. if (sameTarget) set up an alias to use targetCollection as the source name
       if (sameTarget) {
@@ -544,11 +545,11 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           NamedList<Object> rsp = solrClient.request(req);
           Map<String, Object> rs = (Map<String, Object>)rsp.get("result-set");
           if (rs == null || rs.isEmpty()) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing result-set: " + Utils.toJSONString(rsp));
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can't find daemon list: missing result-set: " + Utils.toJSONString(rsp));
           }
           List<Object> list = (List<Object>)rs.get("docs");
           if (list == null) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing result-set: " + Utils.toJSONString(rsp));
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can't find daemon list: missing result-set: " + Utils.toJSONString(rsp));
           }
           if (list.isEmpty()) { // finished?
             break;
@@ -558,11 +559,14 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             String id = (String)map.get("id");
             if (daemonName.equals(id)) {
               isRunning = true;
+              // fail here
+              TestInjection.injectReindexFailure();
               break;
             }
           }
         } catch (Exception e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception copying the documents", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception waiting for daemon " +
+              daemonName + " at " + daemonUrl, e);
         }
         ocmh.cloudManager.getTimeSource().sleep(2000);
       } while (isRunning && !maybeAbort(collection));
@@ -577,14 +581,81 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         .withBaseSolrUrl(daemonUrl).build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
-      q.set("action", "kill");
+      // we should really use 'kill' here, but then we will never
+      // know when the daemon actually finishes running - 'kill' only
+      // sets a flag that may be noticed much later
+      q.set("action", "stop");
       q.set(CommonParams.ID, daemonName);
       q.set(CommonParams.DISTRIB, false);
       QueryRequest req = new QueryRequest(q);
       NamedList<Object> rsp = solrClient.request(req);
       // /result-set/docs/[0]/DaemonOp : Deamon:id killed on coreName
-
-      // nocommit error checking
+      log.debug(" -- stop daemon response: " + Utils.toJSONString(rsp));
+      Map<String, Object> rs = (Map<String, Object>) rsp.get("result-set");
+      if (rs == null || rs.isEmpty()) {
+        log.warn("Problem killing daemon " + daemonName + ": missing result-set: " + Utils.toJSONString(rsp));
+        return;
+      }
+      List<Object> list = (List<Object>) rs.get("docs");
+      if (list == null) {
+        log.warn("Problem killing daemon " + daemonName + ": missing result-set: " + Utils.toJSONString(rsp));
+        return;
+      }
+      if (list.isEmpty()) { // already finished?
+        return;
+      }
+      for (Object o : list) {
+        Map<String, Object> map = (Map<String, Object>) o;
+        String op = (String) map.get("DaemonOp");
+        if (op == null) {
+          continue;
+        }
+        if (op.contains(daemonName) && op.contains("stopped")) {
+          // now wait for the daemon to really stop
+          q.set("action", "list");
+          req = new QueryRequest(q);
+          TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, ocmh.timeSource);
+          while (!timeOut.hasTimedOut()) {
+            rsp = solrClient.request(req);
+            rs = (Map<String, Object>) rsp.get("result-set");
+            if (rs == null || rs.isEmpty()) {
+              log.warn("Problem killing daemon " + daemonName + ": missing result-set: " + Utils.toJSONString(rsp));
+              break;
+            }
+            List<Object> list2 = (List<Object>) rs.get("docs");
+            if (list2 == null) {
+              log.warn("Problem killing daemon " + daemonName + ": missing result-set: " + Utils.toJSONString(rsp));
+              break;
+            }
+            if (list2.isEmpty()) { // already finished?
+              break;
+            }
+            Map<String, Object> status2 = null;
+            for (Object o2 : list2) {
+              Map<String, Object> map2 = (Map<String, Object>)o2;
+              if (daemonName.equals(map2.get("id"))) {
+                status2 = map2;
+                break;
+              }
+            }
+            if (status2 == null) { // finished?
+              break;
+            }
+            Number stopTime = (Number)status2.get("stopTime");
+            if (stopTime.longValue() > 0) {
+              break;
+            }
+          }
+          if (timeOut.hasTimedOut()) {
+            log.warn("Problem killing daemon " + daemonName + ": timed out waiting for daemon to stop.");
+            // proceed anyway
+          }
+        }
+      }
+      // now kill it - it's already stopped, this simply removes its status
+      q.set("action", "kill");
+      req = new QueryRequest(q);
+      solrClient.request(req);
     }
   }
 
