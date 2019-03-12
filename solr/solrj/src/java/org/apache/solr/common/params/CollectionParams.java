@@ -123,7 +123,8 @@ public interface CollectionParams {
     // TODO: not implemented yet
     MERGESHARDS(true, LockLevel.SHARD),
     COLSTATUS(true, LockLevel.NONE),
-    REINDEX_COLLECTION(true, LockLevel.COLLECTION)
+    // this command implements its own locking
+    REINDEXCOLLECTION(true, LockLevel.NONE)
     ;
     public final boolean isWrite;
 

@@ -793,40 +793,60 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
     String target;
     String query;
+    String fields;
     String configName;
-    Boolean keepSource;
+    Boolean removeSource;
+    Boolean abort;
     Integer batchSize;
     Map<String, Object> collectionParams = new HashMap<>();
 
     private ReindexCollection(String collection) {
-      super(CollectionAction.REINDEX_COLLECTION, collection);
+      super(CollectionAction.REINDEXCOLLECTION, collection);
     }
 
+    /** Target collection name (null if the same). */
     public ReindexCollection setTarget(String target) {
       this.target = target;
       return this;
     }
 
+    /** Set to true to abort already running requests. */
+    public ReindexCollection setAbort(boolean abort) {
+      this.abort = abort;
+      return this;
+    }
+
+    /** Query matching the documents to reindex (default is '*:*'). */
     public ReindexCollection setQuery(String query) {
       this.query = query;
       return this;
     }
 
-    public ReindexCollection setKeepSource(boolean keepSource) {
-      this.keepSource = keepSource;
+    /** Fields to reindex (the same syntax as {@link CommonParams#FL}), default is '*'. */
+    public ReindexCollection setFields(String fields) {
+      this.fields = fields;
       return this;
     }
 
+    /** Remove source collection after success. Default is false. */
+    public ReindexCollection setRemoveSource(boolean removeSource) {
+      this.removeSource = removeSource;
+      return this;
+    }
+
+    /** Copy documents in batches of this size. Default is 100. */
     public ReindexCollection setBatchSize(int batchSize) {
       this.batchSize = batchSize;
       return this;
     }
 
+    /** Config name for the target collection. Default is the same as source. */
     public ReindexCollection setConfigName(String configName) {
       this.configName = configName;
       return this;
     }
 
+    /** Set other supported collection CREATE parameters. */
     public ReindexCollection setCollectionParam(String key, Object value) {
       this.collectionParams.put(key, value);
       return this;
@@ -836,9 +856,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.setNonNull("target", target);
+      params.setNonNull("abort", abort);
       params.setNonNull(ZkStateReader.CONFIGNAME_PROP, configName);
       params.setNonNull(CommonParams.Q, query);
-      params.setNonNull("keepSource", keepSource);
+      params.setNonNull(CommonParams.FL, fields);
+      params.setNonNull("removeSource", removeSource);
       params.setNonNull(CommonParams.ROWS, batchSize);
       collectionParams.forEach((k, v) -> params.setNonNull(k, v));
       return params;

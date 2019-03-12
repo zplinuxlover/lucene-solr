@@ -747,8 +747,14 @@ public class CoreContainer {
       containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
       autoScalingHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, AutoScalingHandler.HANDLER_PATH);
     }
+    // verify .system compatibility
+    systemCollCompatCheck();
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
+  }
+
+  private void systemCollCompatCheck() {
+
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs
