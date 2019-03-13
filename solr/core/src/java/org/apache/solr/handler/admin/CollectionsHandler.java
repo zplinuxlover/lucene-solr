@@ -545,7 +545,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     REINDEXCOLLECTION_OP(REINDEXCOLLECTION, (req, rsp, h) -> {
       Map<String, Object> m = copy(req.getParams().required(), null, NAME);
       copy(req.getParams(), m,
-          ReindexCollectionCmd.ABORT,
+          ReindexCollectionCmd.COMMAND,
           ReindexCollectionCmd.REMOVE_SOURCE,
           ReindexCollectionCmd.TARGET,
           ZkStateReader.CONFIGNAME_PROP,
@@ -560,9 +560,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CREATE_NODE_SET_SHUFFLE,
           AUTO_ADD_REPLICAS,
           "shards",
+          STATE_FORMAT,
           CommonParams.ROWS,
           CommonParams.Q,
           CommonParams.FL);
+      if (req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP) != null) {
+        m.put(ZkStateReader.CONFIGNAME_PROP, req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP));
+      }
       copyPropertiesWithPrefix(req.getParams(), m, "router.");
       return m;
     }),

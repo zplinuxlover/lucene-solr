@@ -796,7 +796,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     String fields;
     String configName;
     Boolean removeSource;
-    Boolean abort;
+    String cmd;
     Integer batchSize;
     Map<String, Object> collectionParams = new HashMap<>();
 
@@ -810,9 +810,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    /** Set to true to abort already running requests. */
-    public ReindexCollection setAbort(boolean abort) {
-      this.abort = abort;
+    /** Set optional command (eg. abort, status). */
+    public ReindexCollection setCommand(String command) {
+      this.cmd = command;
       return this;
     }
 
@@ -856,7 +856,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.setNonNull("target", target);
-      params.setNonNull("abort", abort);
+      params.setNonNull("cmd", cmd);
       params.setNonNull(ZkStateReader.CONFIGNAME_PROP, configName);
       params.setNonNull(CommonParams.Q, query);
       params.setNonNull(CommonParams.FL, fields);

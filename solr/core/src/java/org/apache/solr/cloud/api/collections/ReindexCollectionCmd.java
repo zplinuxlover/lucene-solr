@@ -24,18 +24,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -55,42 +61,46 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Reindex a collection, usually in order to change the index schema.
- * <p>WARNING: Reindexing is a potentially lossy operation - some indexed data that is not available as
+ * <p>WARNING: Reindexing is potentially a lossy operation - some indexed data that is not available as
  * stored fields may be irretrievably lost, so users should use this command with caution, evaluating
  * the potential impact by using different source and target collection names first, and preserving
  * the source collection until the evaluation is complete.</p>
  * <p>Reindexing follows these steps:</p>
  * <ol>
- *    <li>create a temporary collection using the most recent schema of the source collection
- *    (or the one specified in the parameters, which must already exist).</li>
- *    <li>copy the source documents to the temporary collection, reconstructing them from their stored
- *    fields and reindexing them using the specified schema. NOTE: some data
+ *    <li>creates a temporary collection using the most recent schema of the source collection
+ *    (or the one specified in the parameters, which must already exist), and the shape of the original
+ *    collection, unless overridden by parameters.</li>
+ *    <li>copy the source documents to the temporary collection, using their stored fields and
+ *    reindexing them using the specified schema. NOTE: some data
  *    loss may occur if the original stored field data is not available!</li>
- *    <li>if the target collection name is not specified
- *    then the same name as the source is assumed and at this step the source collection is permanently removed.</li>
  *    <li>create the target collection from scratch with the specified name (or the same as source if not
- *    specified), but using the new specified schema. NOTE: if the target name was not specified or is the same
- *    as the source collection then the original collection has been deleted in the previous step and it's
- *    not possible to roll-back the changes if the process is interrupted. The (possibly incomplete) data
- *    is still available in the temporary collection.</li>
- *    <li>copy the documents from the temporary collection to the target collection, using the specified schema.</li>
- *    <li>delete temporary collection(s) and optionally delete the source collection if it still exists.</li>
+ *    specified) and the specified parameters. NOTE: if the target name was not specified or is the same
+ *    as the source collection then a unique sequential collection name will be used.</li>
+ *    <li>copy the documents from the source collection to the target collection.</li>
+ *    <li>if the source and target collection name was the same then set up an alias pointing from the source collection name to the actual
+ *    (sequentially named) target collection</li>
+ *    <li>optionally delete the source collection.</li>
  * </ol>
  */
 public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String ABORT = "abort";
+  public static final String COMMAND = "cmd";
+  public static final String REINDEX_STATUS = "reindexStatus";
   public static final String REMOVE_SOURCE = "removeSource";
   public static final String TARGET = "target";
   public static final String TARGET_COL_PREFIX = ".rx_";
   public static final String CHK_COL_PREFIX = ".rx_ck_";
-  public static final String REINDEXING_PROP = CollectionAdminRequest.PROPERTY_PREFIX + "rx";
+  public static final String REINDEXING_STATE = CollectionAdminRequest.PROPERTY_PREFIX + "rx";
+
+  public static final String STATE = "state";
+  public static final String PHASE = "phase";
 
   private static final List<String> COLLECTION_PARAMS = Arrays.asList(
       ZkStateReader.CONFIGNAME_PROP,
@@ -121,19 +131,39 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       return toString().toLowerCase(Locale.ROOT);
     }
 
-    public static State get(String p) {
+    public static State get(Object p) {
       if (p == null) {
         return null;
       }
-      p = p.toLowerCase(Locale.ROOT);
-      if (p.startsWith(CollectionAdminRequest.PROPERTY_PREFIX)) {
-        p = p.substring(CollectionAdminRequest.PROPERTY_PREFIX.length());
-      }
+      p = String.valueOf(p).toLowerCase(Locale.ROOT);
       return states.get(p);
     }
     static Map<String, State> states = Collections.unmodifiableMap(
         Stream.of(State.values()).collect(Collectors.toMap(State::toLower, Function.identity())));
   }
+
+  public enum Cmd {
+    START,
+    ABORT,
+    STATUS;
+
+    public String toLower() {
+      return toString().toLowerCase(Locale.ROOT);
+    }
+
+    public static Cmd get(String p) {
+      if (p == null) {
+        return null;
+      }
+      p = p.toLowerCase(Locale.ROOT);
+      return cmds.get(p);
+    }
+    static Map<String, Cmd> cmds = Collections.unmodifiableMap(
+        Stream.of(Cmd.values()).collect(Collectors.toMap(Cmd::toLower, Function.identity())));
+  }
+
+  private SolrClientCache solrClientCache;
+  private String zkHost;
 
   public ReindexCollectionCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
@@ -156,8 +186,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       }
     }
 
-    if (collection == null || clusterState.getCollectionOrNull(collection) == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection name must be specified and must exist");
+    if (collection == null || !clusterState.hasCollection(collection)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source collection name must be specified and must exist");
     }
     String target = message.getStr(TARGET);
     if (target == null) {
@@ -171,32 +201,40 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     }
     boolean sameTarget = target.equals(collection) || target.equals(originalCollection);
     boolean removeSource = message.getBool(REMOVE_SOURCE, false);
-    boolean abort = message.getBool(ABORT, false);
-    DocCollection coll = clusterState.getCollection(collection);
-    if (abort) {
-      log.info("Abort requested for collection " + collection + ", setting the state to ABORTED.");
-      ZkNodeProps props = new ZkNodeProps(
-          Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
-          ZkStateReader.COLLECTION_PROP, collection,
-          REINDEXING_PROP, State.ABORTED.toLower());
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
-      results.add(State.ABORTED.toLower(), collection);
+    Cmd command = Cmd.get(message.getStr(COMMAND, Cmd.START.toLower()));
+    if (command == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + message.getStr(COMMAND));
+    }
+    Map<String, Object> reindexingState = getReindexingState(ocmh.cloudManager.getDistribStateManager(), collection);
+    if (!reindexingState.containsKey(STATE)) {
+      reindexingState.put(STATE, State.IDLE.toLower());
+    }
+    State state = State.get(reindexingState.get(STATE));
+    if (command == Cmd.ABORT) {
+      log.info("Abort requested for collection {}, setting the state to ABORTED.", collection);
+      // check that it's running
+      if (state != State.RUNNING) {
+        log.debug("Abort requested for collection {} but command is not running: {}", collection, state);
+        return;
+      }
+      setReindexingState(collection, State.ABORTED, null);
+      reindexingState.put(STATE, "aborting");
+      results.add(REINDEX_STATUS, reindexingState);
       // if needed the cleanup will be performed by the running instance of the command
       return;
+    } else if (command == Cmd.STATUS) {
+      results.add(REINDEX_STATUS, reindexingState);
+      return;
     }
+    // command == Cmd.START
+
     // check it's not already running
-    State state = State.get(coll.getStr(REINDEXING_PROP, State.IDLE.toLower()));
     if (state == State.RUNNING) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Reindex is already running for collection " + collection +
-          ". If you are sure this is not the case you can issue &abort=true to clean up this state.");
+          ". If you are sure this is not the case you can issue &cmd=abort to clean up this state.");
     }
-    // set the running flag
-    ZkNodeProps props = new ZkNodeProps(
-        Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
-        ZkStateReader.COLLECTION_PROP, collection,
-        REINDEXING_PROP, State.RUNNING.toLower());
-    ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
 
+    DocCollection coll = clusterState.getCollection(collection);
     boolean aborted = false;
     int batchSize = message.getInt(CommonParams.ROWS, 100);
     String query = message.getStr(CommonParams.Q, "*:*");
@@ -226,11 +264,22 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     } else {
       targetCollection = target;
     }
-    String chkCollection = CHK_COL_PREFIX + originalCollection + "_" + seq;
+    String chkCollection = CHK_COL_PREFIX + originalCollection;
     String daemonUrl = null;
     Exception exc = null;
     boolean createdTarget = false;
     try {
+      solrClientCache = new SolrClientCache(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+      zkHost = ocmh.zkStateReader.getZkClient().getZkServerAddress();
+      // set the running flag
+      reindexingState.clear();
+      reindexingState.put("actualSourceCollection", collection);
+      reindexingState.put("actualTargetCollection", targetCollection);
+      reindexingState.put("checkpointCollection", chkCollection);
+      reindexingState.put("inputDocs", getNumberOfDocs(collection));
+      reindexingState.put(PHASE, "creating target and checkpoint collections");
+      setReindexingState(collection, State.RUNNING, reindexingState);
+
       // 0. set up target and checkpoint collections
       NamedList<Object> cmdResults = new NamedList<>();
       ZkNodeProps cmd;
@@ -276,6 +325,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
       propMap.put(ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode);
       propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
+      propMap.put(DocCollection.STATE_FORMAT, message.getInt(DocCollection.STATE_FORMAT, coll.getStateFormat()));
       if (rf != null) {
         propMap.put(ZkStateReader.REPLICATION_FACTOR, rf);
       }
@@ -301,6 +351,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           CommonParams.NAME, chkCollection,
           ZkStateReader.NUM_SHARDS_PROP, "1",
           ZkStateReader.REPLICATION_FACTOR, "1",
+          DocCollection.STATE_FORMAT, "2",
           CollectionAdminParams.COLL_CONF, "_default",
           CommonAdminParams.WAIT_FOR_FINAL_STATE, "true"
       );
@@ -371,9 +422,13 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to copy documents from " +
             collection + " to " + targetCollection + ": " + Utils.toJSONString(rsp));
       }
+      reindexingState.put("daemonUrl", daemonUrl);
+      reindexingState.put("daemonName", targetCollection);
+      reindexingState.put(PHASE, "copying documents");
+      setReindexingState(collection, State.RUNNING, reindexingState);
 
       // wait for the daemon to finish
-      waitForDaemon(targetCollection, daemonUrl, collection);
+      waitForDaemon(targetCollection, daemonUrl, collection, targetCollection, reindexingState);
       if (maybeAbort(collection)) {
         aborted = true;
         return;
@@ -391,7 +446,14 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         cmdResults = new NamedList<>();
         ocmh.commandMap.get(CollectionParams.CollectionAction.CREATEALIAS).call(clusterState, cmd, results);
         checkResults("setting up alias " + originalCollection + " -> " + targetCollection, cmdResults, true);
+        reindexingState.put("alias", originalCollection + " -> " + targetCollection);
       }
+
+      reindexingState.remove("daemonUrl");
+      reindexingState.remove("daemonName");
+      reindexingState.put("processedDocs", getNumberOfDocs(targetCollection));
+      reindexingState.put(PHASE, "copying done, finalizing");
+      setReindexingState(collection, State.RUNNING, reindexingState);
 
       if (maybeAbort(collection)) {
         aborted = true;
@@ -421,33 +483,83 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         checkResults("deleting source collection " + collection, cmdResults, true);
       } else {
         // 8. clear readOnly on source
-        props = new ZkNodeProps(
+        ZkNodeProps props = new ZkNodeProps(
             Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
             ZkStateReader.COLLECTION_PROP, collection,
             ZkStateReader.READ_ONLY, null);
         ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
       }
-      // 9. set FINISHED state on the target
-      props = new ZkNodeProps(
+      // 9. set FINISHED state on the target and clear the state on the source
+      ZkNodeProps props = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
           ZkStateReader.COLLECTION_PROP, targetCollection,
-          REINDEXING_PROP, State.FINISHED.toLower());
+          REINDEXING_STATE, State.FINISHED.toLower());
       ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
 
-      results.add(State.FINISHED.toLower(), originalCollection);
+      reindexingState.put(STATE, State.FINISHED.toLower());
+      reindexingState.put(PHASE, "done");
+      removeReindexingState(collection);
     } catch (Exception e) {
       log.warn("Error during reindexing of " + originalCollection, e);
       exc = e;
       aborted = true;
-      throw e;
     } finally {
+      solrClientCache.close();
       if (aborted) {
         cleanup(collection, targetCollection, chkCollection, daemonUrl, targetCollection, createdTarget);
-        results.add(State.ABORTED.toLower(), collection);
         if (exc != null) {
           results.add("error", exc.toString());
         }
+        reindexingState.put(STATE, State.ABORTED.toLower());
       }
+      results.add(REINDEX_STATUS, reindexingState);
+    }
+  }
+
+  private static final String REINDEXING_STATE_PATH = "/.reindexing";
+
+  private Map<String, Object> setReindexingState(String collection, State state, Map<String, Object> props) throws Exception {
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
+    DistribStateManager stateManager = ocmh.cloudManager.getDistribStateManager();
+    Map<String, Object> copyProps = new HashMap<>();
+    if (props == null) { // retrieve existing props, if any
+      props = Utils.getJson(stateManager, path);
+    }
+    copyProps.putAll(props);
+    copyProps.put("state", state.toLower());
+    if (stateManager.hasData(path)) {
+      stateManager.setData(path, Utils.toJSON(copyProps), -1);
+    } else {
+      stateManager.makePath(path, Utils.toJSON(copyProps), CreateMode.PERSISTENT, false);
+    }
+    return copyProps;
+  }
+
+  private void removeReindexingState(String collection) throws Exception {
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
+    DistribStateManager stateManager = ocmh.cloudManager.getDistribStateManager();
+    if (stateManager.hasData(path)) {
+      stateManager.removeData(path, -1);
+    }
+  }
+
+  @VisibleForTesting
+  public static Map<String, Object> getReindexingState(DistribStateManager stateManager, String collection) throws Exception {
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
+    // make it modifiable
+    return new TreeMap<>(Utils.getJson(stateManager, path));
+  }
+
+  private long getNumberOfDocs(String collection) {
+    CloudSolrClient solrClient = solrClientCache.getCloudSolrClient(zkHost);
+    try {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add(CommonParams.Q, "*:*");
+      params.add(CommonParams.ROWS, "0");
+      QueryResponse rsp = solrClient.query(collection, params);
+      return rsp.getResults().getNumFound();
+    } catch (Exception e) {
+      return 0L;
     }
   }
 
@@ -473,7 +585,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       log.info("## Aborting - collection {} no longer present.", collection);
       return true;
     }
-    State state = State.get(coll.getStr(REINDEXING_PROP, State.RUNNING.toLower()));
+    Map<String, Object> reindexingState = getReindexingState(ocmh.cloudManager.getDistribStateManager(), collection);
+    State state = State.get(reindexingState.getOrDefault(STATE, State.RUNNING.toLower()));
     if (state != State.ABORTED) {
       return false;
     }
@@ -528,7 +641,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   // XXX currently this is complicated to due a bug in the way the daemon 'list'
   // XXX operation is implemented - see SOLR-13245. We need to query the actual
   // XXX SolrCore where the daemon is running
-  private void waitForDaemon(String daemonName, String daemonUrl, String collection) throws Exception {
+  private void waitForDaemon(String daemonName, String daemonUrl, String sourceCollection, String targetCollection, Map<String, Object> reindexingState) throws Exception {
     HttpClient client = ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder()
         .withHttpClient(client)
@@ -539,8 +652,10 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       q.set(CommonParams.DISTRIB, false);
       QueryRequest req = new QueryRequest(q);
       boolean isRunning;
+      int statusCheck = 0;
       do {
         isRunning = false;
+        statusCheck++;
         try {
           NamedList<Object> rsp = solrClient.request(req);
           Map<String, Object> rs = (Map<String, Object>)rsp.get("result-set");
@@ -568,8 +683,12 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception waiting for daemon " +
               daemonName + " at " + daemonUrl, e);
         }
+        if (statusCheck % 5 == 0) {
+          reindexingState.put("processedDocs", getNumberOfDocs(targetCollection));
+          setReindexingState(sourceCollection, State.RUNNING, reindexingState);
+        }
         ocmh.cloudManager.getTimeSource().sleep(2000);
-      } while (isRunning && !maybeAbort(collection));
+      } while (isRunning && !maybeAbort(sourceCollection));
     }
   }
 
@@ -698,9 +817,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     ZkNodeProps props = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
         ZkStateReader.COLLECTION_PROP, collection,
-        // remove the rx flag, we already aborted
-        REINDEXING_PROP, null,
         ZkStateReader.READ_ONLY, null);
     ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+    removeReindexingState(collection);
   }
 }
