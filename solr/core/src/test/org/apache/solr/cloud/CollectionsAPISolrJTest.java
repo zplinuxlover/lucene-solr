@@ -84,6 +84,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void beforeTest() throws Exception {
     configureCluster(4)
     .addConfig("conf", configset("cloud-minimal"))
+    .addConfig("conf2", configset("cloud-dynamic"))
     .configure();
     
     // clear any persisted auto scaling configuration
@@ -606,7 +607,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testColStatus() throws Exception {
     final String collectionName = "collectionStatusTest";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+    CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
@@ -617,11 +618,24 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     for (int i = 0; i < 10; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", String.valueOf(i));
+      doc.addField("number_i", i);
       doc.addField("number_l", i);
+      doc.addField("number_f", i);
+      doc.addField("number_d", i);
+      doc.addField("number_ti", i);
+      doc.addField("number_tl", i);
+      doc.addField("number_tf", i);
+      doc.addField("number_td", i);
+      doc.addField("point", i + "," + i);
+      doc.addField("pointD", i + "," + i);
+      doc.addField("store", (i * 5) + "," + (i * 5));
+      doc.addField("boolean_b", true);
+      doc.addField("multi_int_with_docvals", i);
       doc.addField("string_s", String.valueOf(i));
-      doc.addField("string_txt", String.valueOf(i));
-      doc.addField("timestamp", new Date());
-      doc.addField("data_bin", binData);
+      doc.addField("tv_mv_string", "this is a test " + i);
+      doc.addField("timestamp_dt", new Date());
+      doc.addField("timestamp_tdt", new Date());
+      doc.addField("payload", binData);
       client.add(collectionName, doc);
     }
     client.commit(collectionName);
