@@ -647,6 +647,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     req.setWithSizeInfo(true);
     CollectionAdminResponse rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
+    List<Object> nonCompliant = (List<Object>)rsp.getResponse().findRecursive(collectionName, "schemaNonCompliant");
+    assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
+    assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
     NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
