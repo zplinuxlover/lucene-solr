@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -611,9 +612,17 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
     SolrClient client = cluster.getSolrClient();
+    byte[] binData = collectionName.getBytes("UTF-8");
     // index some docs
     for (int i = 0; i < 10; i++) {
-      client.add(collectionName, new SolrInputDocument("id", String.valueOf(i)));
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", String.valueOf(i));
+      doc.addField("number_l", i);
+      doc.addField("string_s", String.valueOf(i));
+      doc.addField("string_txt", String.valueOf(i));
+      doc.addField("timestamp", new Date());
+      doc.addField("data_bin", binData);
+      client.add(collectionName, doc);
     }
     client.commit(collectionName);
 

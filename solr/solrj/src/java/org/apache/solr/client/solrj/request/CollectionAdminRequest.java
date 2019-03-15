@@ -907,10 +907,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams)super.getParams();
-      params.setNonNull("segments", withSegments.toString());
-      params.setNonNull("fieldInfo", withFieldInfo.toString());
-      params.setNonNull("coreInfo", withCoreInfo.toString());
-      params.setNonNull("sizeInfo", withSizeInfo.toString());
+      params.setNonNull("segments", withSegments);
+      params.setNonNull("fieldInfo", withFieldInfo);
+      params.setNonNull("coreInfo", withCoreInfo);
+      params.setNonNull("sizeInfo", withSizeInfo);
       return params;
     }
   }
