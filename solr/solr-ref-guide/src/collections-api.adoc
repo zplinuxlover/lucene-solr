@@ -312,7 +312,7 @@ http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCo
 This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents
 matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards. Since the target collection
 hasn't been specified in the parameters a collection with a unique name eg. `.rx_newCollection_2` will be created and on success
-an alias pointing from `newCollection -> .rx_newCollection_2` will be created, effectively replacing the source collection
+an alias pointing from `newCollection` to `.rx_newCollection_2` will be created, effectively replacing the source collection
 for the purpose of indexing and searching. The source collection is assumed to be small so a synchronous request was made.
 
 *Output*

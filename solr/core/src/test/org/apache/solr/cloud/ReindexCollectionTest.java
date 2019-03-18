@@ -260,7 +260,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     assertNotNull("foo", coll.getSlice("foo"));
     assertNotNull("bar", coll.getSlice("bar"));
     assertNotNull("baz", coll.getSlice("baz"));
-    assertEquals(new Integer(1), coll.getReplicationFactor());
+    assertEquals(Integer.valueOf(1), coll.getReplicationFactor());
     assertEquals(ImplicitDocRouter.NAME, coll.getRouter().getName());
   }
 
