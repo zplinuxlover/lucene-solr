@@ -24,27 +24,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.util.IdUtils;
 import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -60,8 +60,9 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(3)
-        .addConfig("conf1", configset("cloud-minimal"))
+    System.setProperty("managed.schema.mutable", "true");
+    configureCluster(2)
+        .addConfig("conf1", configset("cloud-managed"))
         .configure();
     if (! log.isWarnEnabled()) {
       fail("Test requires that log-level is at-least WARN, but WARN is disabled");
@@ -73,9 +74,9 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
 
   @Before
   public void setupSystemCollection() throws Exception {
-    CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 3)
+    CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 3);
+    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     solrClient = new CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
@@ -89,35 +90,36 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     solrClient.add(CollectionAdminParams.SYSTEM_COLL, doc);
     solrClient.commit(CollectionAdminParams.SYSTEM_COLL);
 
-    // workaround for a bug in schema update API
-    String pathToBackup = ZkStateReader.CONFIGS_ZKNODE + "/.system/schema.xml.bak";
-    DistribStateManager stateManager = cloudManager.getDistribStateManager();
-    VersionedData data = null;
-    if (stateManager.hasData(pathToBackup)) {
-      data = stateManager.getData(pathToBackup);
-    }
-    String path = ZkStateReader.CONFIGS_ZKNODE + "/.system/schema.xml";
-    if (!stateManager.hasData(path) && data != null) {
-      stateManager.createData(path, data.getData(), CreateMode.PERSISTENT);
-      stateManager.setData(path, data.getData(), -1);
-      stateManager.removeData(pathToBackup, -1);
-      stateManager.createData(pathToBackup, data.getData(), CreateMode.PERSISTENT);
-      // update it to increase the version
-      stateManager.setData(pathToBackup, data.getData(), -1);
-    }
+    Replica leader
+        = solrClient.getZkStateReader().getLeaderRetry(CollectionAdminParams.SYSTEM_COLL, "shard1", DEFAULT_TIMEOUT);
+    final AtomicReference<Long> coreStartTime = new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
     // trigger compat report by changing the schema
     SchemaRequest req = new SchemaRequest();
     SchemaResponse rsp = req.process(solrClient, CollectionAdminParams.SYSTEM_COLL);
     Map<String, Object> field = getSchemaField("timestamp", rsp);
-    // make obviously incompatible changes
+    // make some obviously incompatible changes
     field.put("type", "string");
     field.put("docValues", false);
     SchemaRequest.ReplaceField replaceFieldRequest = new SchemaRequest.ReplaceField(field);
     SchemaResponse.UpdateResponse replaceFieldResponse = replaceFieldRequest.process(solrClient, CollectionAdminParams.SYSTEM_COLL);
     assertEquals(replaceFieldResponse.toString(), 0, replaceFieldResponse.getStatus());
-    // reload for the schema changes to become active
-    CollectionAdminRequest.reloadCollection(CollectionAdminParams.SYSTEM_COLL);
-    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 3);
+    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(CollectionAdminParams.SYSTEM_COLL);
+    CollectionAdminResponse response = reloadRequest.process(solrClient);
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    // wait for the reload to complete
+    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
+      long restartTime = 0;
+      try {
+        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+      } catch (Exception e) {
+        log.warn("Exception getting core start time: {}", e.getMessage());
+        return false;
+      }
+      return restartTime > coreStartTime.get();
+    });
+    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
+
   }
 
   @After
@@ -177,11 +179,30 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
       fail("time out waiting for new Overseer leader");
     }
 
-    Thread.sleep(5000);
-    SolrDocumentList history = watcher.getHistory(-1, null);
-    assertFalse(history.isEmpty());
+    TimeOut timeOut1 = new TimeOut(60, TimeUnit.SECONDS, cloudManager.getTimeSource());
     boolean foundWarning = false;
     boolean foundSchemaWarning = false;
+    while (!timeOut1.hasTimedOut()) {
+      timeOut1.sleep(1000);
+      SolrDocumentList history = watcher.getHistory(-1, null);
+      for (SolrDocument doc : history) {
+        if (!Overseer.class.getName().equals(doc.getFieldValue("logger"))) {
+          continue;
+        }
+        if (doc.getFieldValue("message").toString().contains("re-indexing")) {
+          foundWarning = true;
+        }
+        if (doc.getFieldValue("message").toString().contains("timestamp")) {
+          foundSchemaWarning = true;
+        }
+      }
+      if (foundWarning && foundSchemaWarning) {
+        break;
+      }
+    }
+    assertTrue("re-indexing warning not found", foundWarning);
+    assertTrue("timestamp field incompatibility warning not found", foundSchemaWarning);
+
   }
 
 }

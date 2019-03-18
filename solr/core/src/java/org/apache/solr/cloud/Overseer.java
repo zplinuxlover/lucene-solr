@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -537,6 +536,8 @@ public class Overseer implements SolrCloseable {
   private Stats stats;
   private String id;
   private volatile boolean closed;
+  private volatile boolean systemCollCompatCheck = true;
+
   private CloudConfig config;
 
   // overseer not responsible for closing reader
@@ -619,6 +620,9 @@ public class Overseer implements SolrCloseable {
       // wait for all leaders to become active and then check
       zkController.zkStateReader.registerCollectionStateWatcher(CollectionAdminParams.SYSTEM_COLL, (liveNodes, state) -> {
         boolean active = true;
+        if (state == null || liveNodes.isEmpty()) {
+          return true;
+        }
         for (Slice s : state.getActiveSlices()) {
           if (s.getLeader() == null || !s.getLeader().isActive(liveNodes)) {
             active = false;
@@ -634,6 +638,11 @@ public class Overseer implements SolrCloseable {
   }
 
   private void doCompatCheck(BiConsumer<String, Object> consumer) {
+    if (systemCollCompatCheck) {
+      systemCollCompatCheck = false;
+    } else {
+      return;
+    }
     try (CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
           .withSocketTimeout(30000).withConnectionTimeout(15000)
         .withHttpClient(updateShardHandler.getDefaultHttpClient()).build()) {
