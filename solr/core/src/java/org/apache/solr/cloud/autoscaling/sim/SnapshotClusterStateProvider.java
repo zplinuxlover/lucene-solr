@@ -18,6 +18,7 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,11 +53,11 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
 
   public SnapshotClusterStateProvider(Map<String, Object> snapshot) {
     Objects.requireNonNull(snapshot);
-    liveNodes = Collections.unmodifiableSet((Set<String>)snapshot.getOrDefault("liveNodes", Collections.emptySet()));
+    liveNodes = Collections.unmodifiableSet(new HashSet<>((Collection<String>)snapshot.getOrDefault("liveNodes", Collections.emptySet())));
     clusterProperties = (Map<String, Object>)snapshot.getOrDefault("clusterProperties", Collections.emptyMap());
     Map<String, Object> stateMap = new HashMap<>((Map<String, Object>)snapshot.getOrDefault("clusterState", Collections.emptyMap()));
-    Integer version = (Integer)stateMap.remove("version");
-    clusterState = ClusterState.load(version, stateMap, liveNodes, ZkStateReader.CLUSTER_STATE);
+    Number version = (Number)stateMap.remove("version");
+    clusterState = ClusterState.load(version != null ? version.intValue() : null, stateMap, liveNodes, ZkStateReader.CLUSTER_STATE);
   }
 
   public Map<String, Object> getSnapshot() {

@@ -1,6 +1,8 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +21,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.Utils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,13 +63,27 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     assertDistribStateManager(snapshotCloudManager.getDistribStateManager(), snapshotCloudManager1.getDistribStateManager());
   }
 
+  @Test
+  public void testPersistance() throws Exception {
+    Path tmpPath = createTempDir();
+    File tmpDir = tmpPath.toFile();
+    SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager);
+    snapshotCloudManager.saveSnapshot(tmpDir);
+    SnapshotCloudManager snapshotCloudManager1 = SnapshotCloudManager.readSnapshot(tmpDir);
+    assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), snapshotCloudManager1.getClusterStateProvider().getClusterState());
+    assertNodeStateProvider(snapshotCloudManager, snapshotCloudManager1);
+    assertDistribStateManager(snapshotCloudManager.getDistribStateManager(), snapshotCloudManager1.getDistribStateManager());
+  }
+
   private static void assertNodeStateProvider(SolrCloudManager oneMgr, SolrCloudManager twoMgr) throws Exception {
     NodeStateProvider one = oneMgr.getNodeStateProvider();
     NodeStateProvider two = twoMgr.getNodeStateProvider();
     for (String node : oneMgr.getClusterStateProvider().getLiveNodes()) {
       Map<String, Object> oneVals = one.getNodeValues(node, SnapshotNodeStateProvider.NODE_TAGS);
       Map<String, Object> twoVals = two.getNodeValues(node, SnapshotNodeStateProvider.NODE_TAGS);
-      assertEquals(oneVals, twoVals);
+      oneVals = Utils.getDeepCopy(oneVals, 10, false, true);
+      twoVals = Utils.getDeepCopy(twoVals, 10, false, true);
+      assertEquals(Utils.toJSONString(oneVals), Utils.toJSONString(twoVals));
       Map<String, Map<String, List<ReplicaInfo>>> oneInfos = one.getReplicaInfo(node, SnapshotNodeStateProvider.REPLICA_TAGS);
       Map<String, Map<String, List<ReplicaInfo>>> twoInfos = two.getReplicaInfo(node, SnapshotNodeStateProvider.REPLICA_TAGS);
       assertEquals(oneInfos, twoInfos);

@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,8 +36,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
  * Read-only snapshot of another {@link NodeStateProvider}.
  */
 public class SnapshotNodeStateProvider implements NodeStateProvider {
-  private Map<String, Map<String, Object>> nodeValues = new HashMap<>();
-  private Map<String, Map<String, Map<String, List<ReplicaInfo>>>> replicaInfos = new HashMap<>();
+  private Map<String, Map<String, Object>> nodeValues = new LinkedHashMap<>();
+  private Map<String, Map<String, Map<String, List<ReplicaInfo>>>> replicaInfos = new LinkedHashMap<>();
 
   public static final List<String> REPLICA_TAGS = Arrays.asList(
       Variable.Type.CORE_IDX.metricsAttribute,
@@ -49,16 +49,16 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
 
   public SnapshotNodeStateProvider(SolrCloudManager other) {
     for (String node : other.getClusterStateProvider().getLiveNodes()) {
-      nodeValues.put(node, other.getNodeStateProvider().getNodeValues(node, NODE_TAGS));
+      nodeValues.put(node, new LinkedHashMap<>(other.getNodeStateProvider().getNodeValues(node, NODE_TAGS)));
       Map<String, Map<String, List<ReplicaInfo>>> infos = other.getNodeStateProvider().getReplicaInfo(node, REPLICA_TAGS);
       infos.forEach((collection, shards) -> {
         shards.forEach((shard, replicas) -> {
           replicas.forEach(r -> {
             List<ReplicaInfo> myReplicas = replicaInfos
-                .computeIfAbsent(node, n -> new HashMap<>())
-                .computeIfAbsent(collection, c -> new HashMap<>())
+                .computeIfAbsent(node, n -> new LinkedHashMap<>())
+                .computeIfAbsent(collection, c -> new LinkedHashMap<>())
                 .computeIfAbsent(shard, s -> new ArrayList<>());
-            Map<String, Object> rMap = new HashMap<>();
+            Map<String, Object> rMap = new LinkedHashMap<>();
             r.toMap(rMap);
             if (r.isLeader) { // ReplicaInfo.toMap doesn't write this!!!
               ((Map<String, Object>)rMap.values().iterator().next()).put("leader", "true");
@@ -74,13 +74,13 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
     Objects.requireNonNull(snapshot);
     nodeValues = (Map<String, Map<String, Object>>)snapshot.getOrDefault("nodeValues", Collections.emptyMap());
     ((Map<String, Object>)snapshot.getOrDefault("replicaInfos", Collections.emptyMap())).forEach((node, v) -> {
-      Map<String, Map<String, List<ReplicaInfo>>> perNode = replicaInfos.computeIfAbsent(node, n -> new HashMap<>());
+      Map<String, Map<String, List<ReplicaInfo>>> perNode = replicaInfos.computeIfAbsent(node, n -> new LinkedHashMap<>());
       ((Map<String, Object>)v).forEach((collection, shards) -> {
-        Map<String, List<ReplicaInfo>> perColl = perNode.computeIfAbsent(collection, c -> new HashMap<>());
+        Map<String, List<ReplicaInfo>> perColl = perNode.computeIfAbsent(collection, c -> new LinkedHashMap<>());
         ((Map<String, Object>)shards).forEach((shard, replicas) -> {
           List<ReplicaInfo> infos = perColl.computeIfAbsent(shard, s -> new ArrayList<>());
           ((List<Map<String, Object>>)replicas).forEach(replicaMap -> {
-            ReplicaInfo ri = new ReplicaInfo(new HashMap<>(replicaMap)); // constructor modifies this map
+            ReplicaInfo ri = new ReplicaInfo(new LinkedHashMap<>(replicaMap)); // constructor modifies this map
             infos.add(ri);
           });
         });
@@ -89,19 +89,19 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
   }
 
   public Map<String, Object> getSnapshot() {
-    Map<String, Object> snapshot = new HashMap<>();
+    Map<String, Object> snapshot = new LinkedHashMap<>();
     snapshot.put("nodeValues", nodeValues);
-    Map<String, Map<String, Map<String, List<Map<String, Object>>>>> replicaInfosMap = new HashMap<>();
+    Map<String, Map<String, Map<String, List<Map<String, Object>>>>> replicaInfosMap = new LinkedHashMap<>();
     snapshot.put("replicaInfos", replicaInfosMap);
     replicaInfos.forEach((node, perNode) -> {
       perNode.forEach((collection, shards) -> {
         shards.forEach((shard, replicas) -> {
           replicas.forEach(r -> {
             List<Map<String, Object>> myReplicas = replicaInfosMap
-                .computeIfAbsent(node, n -> new HashMap<>())
-                .computeIfAbsent(collection, c -> new HashMap<>())
+                .computeIfAbsent(node, n -> new LinkedHashMap<>())
+                .computeIfAbsent(collection, c -> new LinkedHashMap<>())
                 .computeIfAbsent(shard, s -> new ArrayList<>());
-            Map<String, Object> rMap = new HashMap<>();
+            Map<String, Object> rMap = new LinkedHashMap<>();
             r.toMap(rMap);
             if (r.isLeader) { // ReplicaInfo.toMap doesn't write this!!!
               ((Map<String, Object>)rMap.values().iterator().next()).put("leader", "true");

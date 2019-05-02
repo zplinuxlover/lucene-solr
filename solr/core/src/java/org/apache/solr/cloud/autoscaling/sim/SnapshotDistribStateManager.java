@@ -41,7 +41,7 @@ public class SnapshotDistribStateManager implements DistribStateManager {
   public SnapshotDistribStateManager(Map<String, Object> snapshot) {
     snapshot.forEach((path, value) -> {
       Map<String, Object> map = (Map<String, Object>)value;
-      int version = (Integer)map.getOrDefault("version", 0);
+      Number version = (Number)map.getOrDefault("version", 0);
       String owner = (String)map.get("owner");
       String modeStr = (String)map.getOrDefault("mode", CreateMode.PERSISTENT.toString());
       CreateMode mode = CreateMode.valueOf(modeStr);
@@ -49,7 +49,7 @@ public class SnapshotDistribStateManager implements DistribStateManager {
       if (map.containsKey("data")) {
         bytes = Base64.base64ToByteArray((String)map.get("data"));
       }
-      dataMap.put(path, new VersionedData(version, bytes, mode, owner));
+      dataMap.put(path, new VersionedData(version.intValue(), bytes, mode, owner));
     });
   }
 

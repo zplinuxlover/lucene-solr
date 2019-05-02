@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Base64;
@@ -73,5 +75,14 @@ public class VersionedData implements MapWriter {
     }
   }
 
-
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    VersionedData that = (VersionedData) o;
+    return version == that.version &&
+        Arrays.equals(data, that.data) &&
+        Objects.equals(owner, that.owner) &&
+        mode == that.mode;
+  }
 }

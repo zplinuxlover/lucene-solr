@@ -17,13 +17,21 @@
 
 package org.apache.solr.cloud.autoscaling.sim;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -33,6 +41,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 
 /**
  * Read-only snapshot of another {@link SolrCloudManager}.
@@ -44,6 +53,18 @@ public class SnapshotCloudManager implements SolrCloudManager {
   private SnapshotDistribStateManager distribStateManager;
   private TimeSource timeSource;
 
+  public static final String MANAGER_STATE_KEY = "managerState";
+  public static final String CLUSTER_STATE_KEY = "clusterState";
+  public static final String NODE_STATE_KEY = "nodeState";
+  public static final String DISTRIB_STATE_KEY = "distribState";
+
+  private static final List<String> KEYS = Arrays.asList(
+      MANAGER_STATE_KEY,
+      CLUSTER_STATE_KEY,
+      NODE_STATE_KEY,
+      DISTRIB_STATE_KEY
+  );
+
   public SnapshotCloudManager(SolrCloudManager other) throws Exception {
     this.timeSource = other.getTimeSource();
     this.clusterStateProvider = new SnapshotClusterStateProvider(other.getClusterStateProvider());
@@ -54,11 +75,47 @@ public class SnapshotCloudManager implements SolrCloudManager {
   public SnapshotCloudManager(Map<String, Object> snapshot) {
     Objects.requireNonNull(snapshot);
     init(
-        (Map<String, Object>)snapshot.getOrDefault("managerState", Collections.emptyMap()),
-        (Map<String, Object>)snapshot.getOrDefault("clusterState", Collections.emptyMap()),
-        (Map<String, Object>)snapshot.getOrDefault("nodeState", Collections.emptyMap()),
-        (Map<String, Object>)snapshot.getOrDefault("distribState", Collections.emptyMap())
+        (Map<String, Object>)snapshot.getOrDefault(MANAGER_STATE_KEY, Collections.emptyMap()),
+        (Map<String, Object>)snapshot.getOrDefault(CLUSTER_STATE_KEY, Collections.emptyMap()),
+        (Map<String, Object>)snapshot.getOrDefault(NODE_STATE_KEY, Collections.emptyMap()),
+        (Map<String, Object>)snapshot.getOrDefault(DISTRIB_STATE_KEY, Collections.emptyMap())
     );
+  }
+
+  public void saveSnapshot(File targetDir) throws Exception {
+    Map<String, Object> snapshot = getSnapshot();
+    targetDir.mkdirs();
+    for (Map.Entry<String, Object> e : snapshot.entrySet()) {
+      FileOutputStream out = new FileOutputStream(new File(targetDir, e.getKey() + ".json"));
+      IOUtils.write(Utils.toJSON(e.getValue()), out);
+      out.flush();
+      out.close();
+    }
+  }
+
+  public static SnapshotCloudManager readSnapshot(File sourceDir) throws Exception {
+    if (!sourceDir.exists()) {
+      throw new Exception("Source path doesn't exist: " + sourceDir);
+    }
+    if (!sourceDir.isDirectory()) {
+      throw new Exception("Source path is not a directory: " + sourceDir);
+    }
+    Map<String, Object> snapshot = new HashMap<>();
+    int validData = 0;
+    for (String key : KEYS) {
+      File src = new File(sourceDir, key + ".json");
+      if (src.exists()) {
+        InputStream is = new FileInputStream(src);
+        Map<String, Object> data = (Map<String, Object>)Utils.fromJSON(is);
+        is.close();
+        snapshot.put(key, data);
+        validData++;
+      }
+    }
+    if (validData < KEYS.size()) {
+      throw new Exception("Some data is missing - expected: " + KEYS + ", found: " + snapshot.keySet());
+    }
+    return new SnapshotCloudManager(snapshot);
   }
 
   private void init(Map<String, Object> managerState, Map<String, Object> clusterState, Map<String, Object> nodeState, Map<String, Object> distribState) {

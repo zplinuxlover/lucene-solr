@@ -562,11 +562,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       Map<String, Object> values = cloudManager.getSimNodeStateProvider().simGetAllNodeValues()
           .computeIfAbsent(nodeId, id -> new ConcurrentHashMap<>(SimCloudManager.createNodeValues(id)));
       // update the number of cores and freedisk in node values
-      Integer cores = (Integer)values.get(ImplicitSnitch.CORES);
+      Number cores = (Number)values.get(ImplicitSnitch.CORES);
       if (cores == null) {
         cores = 0;
       }
-      cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores + 1);
+      cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores.intValue() + 1);
       Number disk = (Number)values.get(ImplicitSnitch.DISK);
       if (disk == null) {
         disk = SimCloudManager.DEFAULT_FREE_DISK;
@@ -618,11 +618,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
             // update the number of cores in node values, if node is live
             if (liveNodes.contains(nodeId)) {
-              Integer cores = (Integer)cloudManager.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.CORES);
-              if (cores == null || cores == 0) {
+              Number cores = (Number)cloudManager.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.CORES);
+              if (cores == null || cores.intValue() == 0) {
                 throw new Exception("Unexpected value of 'cores' (" + cores + ") on node: " + nodeId);
               }
-              cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores - 1);
+              cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores.intValue() - 1);
               Number disk = (Number)cloudManager.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.DISK);
               if (disk == null || disk.doubleValue() == 0.0) {
                 throw new Exception("Unexpected value of 'freedisk' (" + disk + ") on node: " + nodeId);
@@ -1038,13 +1038,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               if (ri.getCollection().equals(collection)) {
                 it.remove();
                 // update the number of cores in node values
-                Integer cores = (Integer) cloudManager.getSimNodeStateProvider().simGetNodeValue(n, "cores");
+                Number cores = (Number) cloudManager.getSimNodeStateProvider().simGetNodeValue(n, "cores");
                 if (cores != null) { // node is still up
-                  if (cores == 0) {
+                  if (cores.intValue() == 0) {
                     throw new RuntimeException("Unexpected value of 'cores' (" + cores + ") on node: " + n);
                   }
                   try {
-                    cloudManager.getSimNodeStateProvider().simSetNodeValue(n, "cores", cores - 1);
+                    cloudManager.getSimNodeStateProvider().simSetNodeValue(n, "cores", cores.intValue() - 1);
                   } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("interrupted");

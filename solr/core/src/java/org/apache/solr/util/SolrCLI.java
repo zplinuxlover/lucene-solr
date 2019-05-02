@@ -118,6 +118,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.autoscaling.sim.NoopDistributedQueueFactory;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
+import org.apache.solr.cloud.autoscaling.sim.SnapshotCloudManager;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -857,7 +858,7 @@ public class SolrCLI implements CLIO {
   }
 
 
-  public static class AutoscalingTool extends SolrCloudTool {
+  public static class AutoscalingTool extends ToolBase {
     static final String NODE_REDACTION_PREFIX = "N_";
     static final String COLL_REDACTION_PREFIX = "COLL_";
 
@@ -911,6 +912,16 @@ public class SolrCLI implements CLIO {
               .withDescription("Show summarized collection & node statistics.")
               .create("stats"),
           OptionBuilder
+              .withDescription("Store autoscaling snapshot of the current cluster.")
+              .withArgName("DIR")
+              .hasArg()
+              .create("save"),
+          OptionBuilder
+              .withDescription("Read autoscaling snapshot of the cluster instead of using the real one.")
+              .withArgName("DIR")
+              .hasArg()
+              .create("read"),
+          OptionBuilder
               .withDescription("Simulate execution of all suggestions.")
               .create("simulate"),
           OptionBuilder
@@ -931,85 +942,111 @@ public class SolrCLI implements CLIO {
       return "autoscaling";
     }
 
-    @Override
-    protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-      try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {
-        AutoScalingConfig config = null;
-        HashSet<String> liveNodes = new HashSet<>();
-        String configFile = cli.getOptionValue("a");
-        if (configFile != null) {
+    protected void runImpl(CommandLine cli) throws Exception {
+      raiseLogLevelUnlessVerbose(cli);
+      SnapshotCloudManager cloudManager;
+      if (cli.hasOption("read")) {
+        File sourceDir = new File(cli.getOptionValue("read"));
+        cloudManager = SnapshotCloudManager.readSnapshot(sourceDir);
+        if (verbose) {
+          log.info("Read autoscaling snapshot from " + sourceDir.getAbsolutePath());
+        }
+      } else {
+        String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
+
+        log.debug("Connecting to Solr cluster: " + zkHost);
+        try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
+
+          String collection = cli.getOptionValue("collection");
+          if (collection != null)
+            cloudSolrClient.setDefaultCollection(collection);
+
+          cloudSolrClient.connect();
+          try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {
+            cloudManager = new SnapshotCloudManager(realCloudManager);
+          }
+        }
+        if (cli.hasOption("save")) {
+          File targetDir = new File(cli.getOptionValue("save"));
+          cloudManager.saveSnapshot(targetDir);
           if (verbose) {
-            log.info("- reading autoscaling config from " + configFile);
-          }
-          config = new AutoScalingConfig(IOUtils.toByteArray(new FileInputStream(configFile)));
-        } else {
-          if (verbose) {
-            log.info("- reading autoscaling config from the cluster.");
-          }
-          config = realCloudManager.getDistribStateManager().getAutoScalingConfig();
-        }
-        // freeze the cluster state
-        SimCloudManager cloudManager = SimCloudManager.createCluster(realCloudManager, TimeSource.get("simTime:50"));
-        liveNodes.addAll(cloudManager.getClusterStateProvider().getLiveNodes());
-        boolean withSuggestions = cli.hasOption("s");
-        boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");
-        boolean withSortedNodes = cli.hasOption("n");
-        boolean withClusterState = cli.hasOption("c");
-        boolean withStats = cli.hasOption("stats");
-        boolean redact = cli.hasOption("r");
-        if (cli.hasOption("all")) {
-          withSuggestions = true;
-          withDiagnostics = true;
-          withSortedNodes = true;
-          withClusterState = true;
-          withStats = true;
-        }
-        // prepare to redact also host names / IPs in base_url and other properties
-        Set<String> redactNames = new HashSet<>();
-        for (String nodeName : liveNodes) {
-          String urlString = Utils.getBaseUrlForNodeName(nodeName, "http");
-          try {
-            URL u = new URL(urlString);
-            // protocol format
-            redactNames.add(u.getHost() + ":" + u.getPort());
-            // node name format
-            redactNames.add(u.getHost() + "_" + u.getPort() + "_");
-          } catch (MalformedURLException e) {
-            log.warn("Invalid URL for node name " + nodeName + ", replacing including protocol and path", e);
-            redactNames.add(urlString);
-            redactNames.add(Utils.getBaseUrlForNodeName(nodeName, "https"));
+            log.info("Saved autoscaling snapshot to " + targetDir.getAbsolutePath());
           }
         }
-        // redact collection names too
-        Set<String> redactCollections = new HashSet<>();
-        ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
-        clusterState.forEachCollection(coll -> redactCollections.add(coll.getName()));
-        if (!withSuggestions && !withDiagnostics) {
-          withSuggestions = true;
-        }
-        Map<String, Object> results = prepareResults(cloudManager, config, withClusterState,
-            withStats, withSuggestions, withSortedNodes, withDiagnostics);
-        if (cli.hasOption("simulate")) {
-          String iterStr = cli.getOptionValue("i", "10");
-          int iterations;
-          try {
-            iterations = Integer.parseInt(iterStr);
-          } catch (Exception e) {
-            log.warn("Invalid option 'i' value, using default 10:" + e);
-            iterations = 10;
-          }
-          Map<String, Object> simulationResults = new HashMap<>();
-          simulate(cloudManager, config, simulationResults, withClusterState,
-              withStats, withSuggestions, withSortedNodes, withDiagnostics, iterations);
-          results.put("simulation", simulationResults);
-        }
-        String data = Utils.toJSONString(results);
-        if (redact) {
-          data = RedactionUtils.redactNames(redactCollections, COLL_REDACTION_PREFIX, data);
-          data = RedactionUtils.redactNames(redactNames, NODE_REDACTION_PREFIX, data);
-        }
-        stdout.println(data);
       }
+      AutoScalingConfig config = null;
+      HashSet<String> liveNodes = new HashSet<>();
+      String configFile = cli.getOptionValue("a");
+      if (configFile != null) {
+        if (verbose) {
+          log.info("- reading autoscaling config from " + configFile);
+        }
+        config = new AutoScalingConfig(IOUtils.toByteArray(new FileInputStream(configFile)));
+      } else {
+        if (verbose) {
+          log.info("- reading autoscaling config from the cluster.");
+        }
+        config = cloudManager.getDistribStateManager().getAutoScalingConfig();
+      }
+      liveNodes.addAll(cloudManager.getClusterStateProvider().getLiveNodes());
+      boolean withSuggestions = cli.hasOption("s");
+      boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");
+      boolean withSortedNodes = cli.hasOption("n");
+      boolean withClusterState = cli.hasOption("c");
+      boolean withStats = cli.hasOption("stats");
+      boolean redact = cli.hasOption("r");
+      if (cli.hasOption("all")) {
+        withSuggestions = true;
+        withDiagnostics = true;
+        withSortedNodes = true;
+        withClusterState = true;
+        withStats = true;
+      }
+      // prepare to redact also host names / IPs in base_url and other properties
+      Set<String> redactNames = new HashSet<>();
+      for (String nodeName : liveNodes) {
+        String urlString = Utils.getBaseUrlForNodeName(nodeName, "http");
+        try {
+          URL u = new URL(urlString);
+          // protocol format
+          redactNames.add(u.getHost() + ":" + u.getPort());
+          // node name format
+          redactNames.add(u.getHost() + "_" + u.getPort() + "_");
+        } catch (MalformedURLException e) {
+          log.warn("Invalid URL for node name " + nodeName + ", replacing including protocol and path", e);
+          redactNames.add(urlString);
+          redactNames.add(Utils.getBaseUrlForNodeName(nodeName, "https"));
+        }
+      }
+      // redact collection names too
+      Set<String> redactCollections = new HashSet<>();
+      ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+      clusterState.forEachCollection(coll -> redactCollections.add(coll.getName()));
+      if (!withSuggestions && !withDiagnostics) {
+        withSuggestions = true;
+      }
+      Map<String, Object> results = prepareResults(cloudManager, config, withClusterState,
+          withStats, withSuggestions, withSortedNodes, withDiagnostics);
+      if (cli.hasOption("simulate")) {
+        String iterStr = cli.getOptionValue("i", "10");
+        int iterations;
+        try {
+          iterations = Integer.parseInt(iterStr);
+        } catch (Exception e) {
+          log.warn("Invalid option 'i' value, using default 10:" + e);
+          iterations = 10;
+        }
+        Map<String, Object> simulationResults = new HashMap<>();
+        simulate(cloudManager, config, simulationResults, withClusterState,
+            withStats, withSuggestions, withSortedNodes, withDiagnostics, iterations);
+        results.put("simulation", simulationResults);
+      }
+      String data = Utils.toJSONString(results);
+      if (redact) {
+        data = RedactionUtils.redactNames(redactCollections, COLL_REDACTION_PREFIX, data);
+        data = RedactionUtils.redactNames(redactNames, NODE_REDACTION_PREFIX, data);
+      }
+      stdout.println(data);
     }
 
     private Map<String, Object> prepareResults(SolrCloudManager clientCloudManager,
@@ -1186,7 +1223,7 @@ public class SolrCLI implements CLIO {
       return results;
     }
 
-    private void simulate(SimCloudManager simCloudManager,
+    private void simulate(SolrCloudManager cloudManager,
                           AutoScalingConfig config,
                           Map<String, Object> results,
                           boolean withClusterState,
@@ -1194,6 +1231,7 @@ public class SolrCLI implements CLIO {
                           boolean withSuggestions,
                           boolean withSortedNodes,
                           boolean withDiagnostics, int iterations) throws Exception {
+      SimCloudManager simCloudManager = SimCloudManager.createCluster(cloudManager, TimeSource.get("simTime:50"));
       int loop = iterations;
       List<Suggester.SuggestionInfo> suggestions = Collections.emptyList();
       Map<String, Object> intermediate = new LinkedHashMap<>();
