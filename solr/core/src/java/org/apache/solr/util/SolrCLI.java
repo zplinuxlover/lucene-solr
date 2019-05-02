@@ -99,8 +99,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
@@ -118,6 +116,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.autoscaling.sim.NoopDistributedQueueFactory;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -934,18 +933,7 @@ public class SolrCLI implements CLIO {
 
     @Override
     protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-      DistributedQueueFactory dummmyFactory = new DistributedQueueFactory() {
-        @Override
-        public DistributedQueue makeQueue(String path) throws IOException {
-          throw new UnsupportedOperationException("makeQueue");
-        }
-
-        @Override
-        public void removeQueue(String path) throws IOException {
-          throw new UnsupportedOperationException("removeQueue");
-        }
-      };
-      try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(dummmyFactory, cloudSolrClient)) {
+      try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {
         AutoScalingConfig config = null;
         HashSet<String> liveNodes = new HashSet<>();
         String configFile = cli.getOptionValue("a");

@@ -16,12 +16,16 @@
  */
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.io.IOException;
+
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.Base64;
 import org.apache.zookeeper.CreateMode;
 
 /**
  * Immutable representation of binary data with version.
  */
-public class VersionedData {
+public class VersionedData implements MapWriter {
   private final int version;
   private final byte[] data;
   private final String owner;
@@ -56,4 +60,18 @@ public class VersionedData {
   public String getOwner() {
     return owner;
   }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("version", version);
+    if (owner != null) {
+      ew.put("owner", owner);
+    }
+    ew.put("mode", mode.toString());
+    if (data != null) {
+      ew.put("data", Base64.byteArrayToBase64(data));
+    }
+  }
+
+
 }
