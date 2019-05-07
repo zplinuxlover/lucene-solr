@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 
@@ -39,18 +41,19 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
   private Map<String, Map<String, Object>> nodeValues = new LinkedHashMap<>();
   private Map<String, Map<String, Map<String, List<ReplicaInfo>>>> replicaInfos = new LinkedHashMap<>();
 
-  public static final List<String> REPLICA_TAGS = Arrays.asList(
-      Variable.Type.CORE_IDX.metricsAttribute,
-      "QUERY./select.requests",
-      "UPDATE./update.requests"
-  );
-  public static final Set<String> NODE_TAGS = SimCloudManager.createNodeValues("unused:1234_solr").keySet();
+  private static double GB = 1024.0d * 1024.0d * 1024.0d;
 
-
-  public SnapshotNodeStateProvider(SolrCloudManager other) {
+  public SnapshotNodeStateProvider(SolrCloudManager other, AutoScalingConfig config) throws Exception {
+    if (config == null) {
+      config = other.getDistribStateManager().getAutoScalingConfig();
+    }
+    Set<String> nodeTags = new HashSet<>(SimUtils.COMMON_NODE_TAGS);
+    nodeTags.addAll(config.getPolicy().getParams());
+    Set<String> replicaTags = new HashSet<>(SimUtils.COMMON_REPLICA_TAGS);
+    replicaTags.addAll(config.getPolicy().getPerReplicaAttributes());
     for (String node : other.getClusterStateProvider().getLiveNodes()) {
-      nodeValues.put(node, new LinkedHashMap<>(other.getNodeStateProvider().getNodeValues(node, NODE_TAGS)));
-      Map<String, Map<String, List<ReplicaInfo>>> infos = other.getNodeStateProvider().getReplicaInfo(node, REPLICA_TAGS);
+      nodeValues.put(node, new LinkedHashMap<>(other.getNodeStateProvider().getNodeValues(node, nodeTags)));
+      Map<String, Map<String, List<ReplicaInfo>>> infos = other.getNodeStateProvider().getReplicaInfo(node, replicaTags);
       infos.forEach((collection, shards) -> {
         shards.forEach((shard, replicas) -> {
           replicas.forEach(r -> {
@@ -63,7 +66,21 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
             if (r.isLeader) { // ReplicaInfo.toMap doesn't write this!!!
               ((Map<String, Object>)rMap.values().iterator().next()).put("leader", "true");
             }
-            myReplicas.add(new ReplicaInfo(rMap));
+            ReplicaInfo ri = new ReplicaInfo(rMap);
+            // put in "leader" again if present
+            if (r.isLeader) {
+              ri.getVariables().put("leader", "true");
+            }
+            // externally produced snapshots may not include the right units
+            if (ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute) == null) {
+              if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
+                Number indexSizeGB = (Number) ri.getVariable(Variable.Type.CORE_IDX.tagName);
+                ri.getVariables().put(Variable.Type.CORE_IDX.metricsAttribute, indexSizeGB.doubleValue() * GB);
+              } else {
+                throw new RuntimeException("Missing size information for replica: " + ri);
+              }
+            }
+            myReplicas.add(ri);
           });
         });
       });
@@ -81,6 +98,18 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
           List<ReplicaInfo> infos = perColl.computeIfAbsent(shard, s -> new ArrayList<>());
           ((List<Map<String, Object>>)replicas).forEach(replicaMap -> {
             ReplicaInfo ri = new ReplicaInfo(new LinkedHashMap<>(replicaMap)); // constructor modifies this map
+            if (ri.isLeader) {
+              ri.getVariables().put("leader", "true");
+            }
+            // externally produced snapshots may not include the right units
+            if (ri.getVariable(Variable.Type.CORE_IDX.metricsAttribute) == null) {
+                if (ri.getVariable(Variable.Type.CORE_IDX.tagName) != null) {
+                  Number indexSizeGB = (Number) ri.getVariable(Variable.Type.CORE_IDX.tagName);
+                  ri.getVariables().put(Variable.Type.CORE_IDX.metricsAttribute, indexSizeGB.doubleValue() * GB);
+                } else {
+                  throw new RuntimeException("Missing size information for replica: " + ri);
+              }
+            }
             infos.add(ri);
           });
         });
@@ -122,6 +151,19 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
     return replicaInfos.getOrDefault(node, Collections.emptyMap());
+  }
+
+  public ReplicaInfo getReplicaInfo(String collection, String coreNode) {
+    for (Map<String, Map<String, List<ReplicaInfo>>> perNode : replicaInfos.values()) {
+      for (List<ReplicaInfo> perShard : perNode.getOrDefault(collection, Collections.emptyMap()).values()) {
+        for (ReplicaInfo ri : perShard) {
+          if (ri.getName().equals(coreNode)) {
+            return ri;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   @Override

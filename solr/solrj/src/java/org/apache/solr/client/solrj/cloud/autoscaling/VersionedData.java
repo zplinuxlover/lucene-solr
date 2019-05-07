@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 
 /**
@@ -73,6 +74,11 @@ public class VersionedData implements MapWriter {
     if (data != null) {
       ew.put("data", Base64.byteArrayToBase64(data));
     }
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
   }
 
   @Override

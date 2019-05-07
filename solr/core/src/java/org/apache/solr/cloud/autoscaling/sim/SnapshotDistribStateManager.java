@@ -1,6 +1,7 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,18 +24,26 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Read-only snapshot of another {@link DistribStateManager}
  */
 public class SnapshotDistribStateManager implements DistribStateManager {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   LinkedHashMap<String, VersionedData> dataMap = new LinkedHashMap<>();
 
-  public SnapshotDistribStateManager(DistribStateManager other) throws Exception {
+  public SnapshotDistribStateManager(DistribStateManager other, AutoScalingConfig config) throws Exception {
     List<String> tree = other.listTree("/");
+    log.info("- copying " + tree.size() + " resources from " + other.getClass().getSimpleName());
     for (String path : tree) {
       dataMap.put(path, other.getData(path));
+    }
+    if (config != null) { // overwrite existing
+      VersionedData vd = new VersionedData(config.getZkVersion(), Utils.toJSON(config), CreateMode.PERSISTENT, "0");
+      dataMap.put(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, vd);
     }
   }
 
@@ -51,6 +60,7 @@ public class SnapshotDistribStateManager implements DistribStateManager {
       }
       dataMap.put(path, new VersionedData(version.intValue(), bytes, mode, owner));
     });
+    log.info("- loaded snapshot of " + dataMap.size() + " resources");
   }
 
   public Map<String, Object> getSnapshot() {
@@ -71,6 +81,13 @@ public class SnapshotDistribStateManager implements DistribStateManager {
   @Override
   public List<String> listData(String path) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     return listData(path, null);
+  }
+
+  @Override
+  public List<String> listTree(String path) {
+    return dataMap.keySet().stream()
+        .filter(p -> p.startsWith(path))
+        .collect(Collectors.toList());
   }
 
   @Override
