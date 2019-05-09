@@ -239,6 +239,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               nodeReplicaMap.computeIfAbsent(r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN).add(ri);
               colShardReplicaMap.computeIfAbsent(ri.getCollection(), name -> new ConcurrentHashMap<>())
                   .computeIfAbsent(ri.getShard(), shard -> new ArrayList<>()).add(ri);
+            } else {
+              log.warn("- dropping replica because its node " + r.getNodeName() + " is not live: " + r);
             }
           });
         });
@@ -289,7 +291,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       (r.getNodeName(), Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
     synchronized (list) {
       for (ReplicaInfo ri : list) {
-        if (r.getCoreName().equals(ri.getCore())) {
+        if (r.getCoreName().equals(ri.getCore()) && r.getName().equals(ri.getName())) {
           return ri;
         }
       }
@@ -584,7 +586,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       cloudManager.getSimNodeStateProvider().simSetNodeValue(nodeId, ImplicitSnitch.CORES, cores.intValue() + 1);
       Number disk = (Number)values.get(ImplicitSnitch.DISK);
       if (disk == null) {
-        disk = SimCloudManager.DEFAULT_FREE_DISK;
+        throw new Exception("Missing '" + ImplicitSnitch.DISK + "' in node metrics for node " + nodeId);
+        //disk = SimCloudManager.DEFAULT_FREE_DISK;
       }
       long replicaSize = ((Number)replicaInfo.getVariable(Type.CORE_IDX.metricsAttribute)).longValue();
       Number replicaSizeGB = (Number)Type.CORE_IDX.convertVal(replicaSize);
@@ -613,7 +616,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
    * @param nodeId node id
    * @param coreNodeName coreNodeName
    */
-  public void simRemoveReplica(String nodeId, String coreNodeName) throws Exception {
+  public void simRemoveReplica(String nodeId, String collection, String coreNodeName) throws Exception {
     ensureNotClosed();
     
     lock.lockInterruptibly();
@@ -622,7 +625,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         (nodeId, Utils.NEW_SYNCHRONIZED_ARRAYLIST_FUN);
       synchronized (replicas) {
         for (int i = 0; i < replicas.size(); i++) {
-          if (coreNodeName.equals(replicas.get(i).getName())) {
+          if (collection.equals(replicas.get(i).getCollection()) && coreNodeName.equals(replicas.get(i).getName())) {
             ReplicaInfo ri = replicas.remove(i);
             colShardReplicaMap.computeIfAbsent(ri.getCollection(), c -> new ConcurrentHashMap<>())
               .computeIfAbsent(ri.getShard(), s -> new ArrayList<>())
@@ -1148,13 +1151,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     ReplicaInfo ri = getReplicaInfo(replica);
     if (ri != null) {
       if (ri.getVariable(Type.CORE_IDX.tagName) != null) {
-        // simulate very large replicas - add additional delay of 1s / GB
+        // simulate very large replicas - add additional delay of 5s / GB
         long sizeInGB = ((Number)ri.getVariable(Type.CORE_IDX.tagName)).longValue();
         long opDelay = opDelays.getOrDefault(ri.getCollection(), Collections.emptyMap())
             .getOrDefault(CollectionParams.CollectionAction.MOVEREPLICA.name(), defaultOpDelays.get(CollectionParams.CollectionAction.MOVEREPLICA.name()));
-        opDelay = opDelay / 1000;
+        opDelay = TimeUnit.MILLISECONDS.toSeconds(opDelay);
         if (sizeInGB > opDelay) {
-          cloudManager.getTimeSource().sleep(TimeUnit.SECONDS.toMillis(sizeInGB - opDelay));
+          // add 5s per each GB above the threshold
+          cloudManager.getTimeSource().sleep(TimeUnit.SECONDS.toMillis(sizeInGB - opDelay) * 5);
         }
       }
     }
@@ -1172,7 +1176,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     // xxx should run leader election here already?
     simAddReplica(targetNode, newReplica, false);
     // this will trigger leader election
-    simRemoveReplica(replica.getNodeName(), replica.getName());
+    simRemoveReplica(replica.getNodeName(), collection, replica.getName());
     results.add("success", "");
   }
 
