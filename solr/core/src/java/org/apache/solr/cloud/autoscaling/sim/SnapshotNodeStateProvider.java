@@ -18,7 +18,6 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -43,6 +42,12 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
 
   private static double GB = 1024.0d * 1024.0d * 1024.0d;
 
+  /**
+   * Populate this instance from another instance of {@link SolrCloudManager}.
+   * @param other another instance
+   * @param config optional {@link AutoScalingConfig}, which will be used to determine what node and
+   *               replica tags to retrieve. If this is null then the other instance's config will be used.
+   */
   public SnapshotNodeStateProvider(SolrCloudManager other, AutoScalingConfig config) throws Exception {
     if (config == null) {
       config = other.getDistribStateManager().getAutoScalingConfig();
@@ -87,6 +92,10 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
     }
   }
 
+  /**
+   * Populate this instance from a previously generated snapshot.
+   * @param snapshot previous snapshot created using this class.
+   */
   public SnapshotNodeStateProvider(Map<String, Object> snapshot) {
     Objects.requireNonNull(snapshot);
     nodeValues = (Map<String, Map<String, Object>>)snapshot.getOrDefault("nodeValues", Collections.emptyMap());
@@ -117,6 +126,10 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
     });
   }
 
+  /**
+   * Create a snapshot of all node and replica tag values available from the original source, per the original
+   * autoscaling configuration. Note:
+   */
   public Map<String, Object> getSnapshot() {
     Map<String, Object> snapshot = new LinkedHashMap<>();
     snapshot.put("nodeValues", nodeValues);

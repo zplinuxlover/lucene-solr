@@ -53,11 +53,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -104,7 +102,6 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
-import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -961,8 +958,12 @@ public class SolrCLI implements CLIO {
       }
       if (cli.hasOption("load")) {
         File sourceDir = new File(cli.getOptionValue("load"));
-        cloudManager = SnapshotCloudManager.readSnapshot(sourceDir);
         CLIO.err("- loading autoscaling snapshot from " + sourceDir.getAbsolutePath());
+        cloudManager = SnapshotCloudManager.readSnapshot(sourceDir);
+        if (config == null) {
+          CLIO.err("- reading autoscaling config from the snapshot.");
+          config = cloudManager.getDistribStateManager().getAutoScalingConfig();
+        }
       } else {
         String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
 
@@ -975,6 +976,10 @@ public class SolrCLI implements CLIO {
 
           cloudSolrClient.connect();
           try (SolrClientCloudManager realCloudManager = new SolrClientCloudManager(NoopDistributedQueueFactory.INSTANCE, cloudSolrClient)) {
+            if (config == null) {
+              CLIO.err("- reading autoscaling config from the cluster.");
+              config = realCloudManager.getDistribStateManager().getAutoScalingConfig();
+            }
             cloudManager = new SnapshotCloudManager(realCloudManager, config);
           }
         }
@@ -985,10 +990,6 @@ public class SolrCLI implements CLIO {
         CLIO.err("- saved autoscaling snapshot to " + targetDir.getAbsolutePath());
       }
       HashSet<String> liveNodes = new HashSet<>();
-      if (config == null) {
-        CLIO.err("- reading autoscaling config from the cluster.");
-        config = cloudManager.getDistribStateManager().getAutoScalingConfig();
-      }
       liveNodes.addAll(cloudManager.getClusterStateProvider().getLiveNodes());
       boolean withSuggestions = cli.hasOption("s");
       boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");

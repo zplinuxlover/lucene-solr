@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
@@ -35,9 +51,14 @@ public class SnapshotDistribStateManager implements DistribStateManager {
 
   LinkedHashMap<String, VersionedData> dataMap = new LinkedHashMap<>();
 
+  /**
+   * Populate this instance from another {@link DistribStateManager} instance.
+   * @param other another instance
+   * @param config optional {@link AutoScalingConfig}, which will overwrite any existing config.
+   */
   public SnapshotDistribStateManager(DistribStateManager other, AutoScalingConfig config) throws Exception {
     List<String> tree = other.listTree("/");
-    log.info("- copying " + tree.size() + " resources from " + other.getClass().getSimpleName());
+    log.debug("- copying {} resources from {}", tree.size(), other.getClass().getSimpleName());
     for (String path : tree) {
       dataMap.put(path, other.getData(path));
     }
@@ -47,6 +68,10 @@ public class SnapshotDistribStateManager implements DistribStateManager {
     }
   }
 
+  /**
+   * Populate this instance from a previously generated snapshot.
+   * @param snapshot previous snapshot created using this class.
+   */
   public SnapshotDistribStateManager(Map<String, Object> snapshot) {
     snapshot.forEach((path, value) -> {
       Map<String, Object> map = (Map<String, Object>)value;
@@ -60,9 +85,12 @@ public class SnapshotDistribStateManager implements DistribStateManager {
       }
       dataMap.put(path, new VersionedData(version.intValue(), bytes, mode, owner));
     });
-    log.info("- loaded snapshot of " + dataMap.size() + " resources");
+    log.debug("- loaded snapshot of {} resources", dataMap.size());
   }
 
+  /**
+   * Create a snapshot of all content in this instance.
+   */
   public Map<String, Object> getSnapshot() {
     Map<String, Object> snapshot = new LinkedHashMap<>();
     dataMap.forEach((path, vd) -> {
