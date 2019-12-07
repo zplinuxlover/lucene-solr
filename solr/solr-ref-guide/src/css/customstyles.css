@@ -1,4 +1,81 @@
 
+/** Sets page wrapper and sidebar **/
+.wrapper {
+    display: flex;
+    width: 100%;
+}
+
+#sidebar {
+    width: 275px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 999;
+    background: #305CB3;
+    transition: all 0.3s;
+}
+
+#sidebar.active {
+  margin-left: -275px;
+}
+
+
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: -250px;
+    }
+    #sidebar.active {
+        margin-left: 0;
+    }
+}
+
+.sidebar-header {
+  padding-left: 5px;
+  color: #fff;
+}
+
+.sidebar-header h4 {
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.sidebar-header a {
+  color: #fff;
+}
+
+#mysidebar.nav a {
+  color: #fff;
+}
+
+#mysidebar.nav > li {
+    width: 275px;
+}
+
+#mysidebar.nav ul {
+    background-color: #FF833D;
+}
+
+#mysidebar.nav ul li a {
+  background-color: #FF833D;
+  font-weight: bold;
+  color: white;
+  border: none;
+}
+
+.navbar .container {
+  margin-left: 275px;
+  border: solid;
+  border-color: whitesmoke;
+  background-color: white;
+}
+
+.form-row {
+  padding-bottom: 15px;
+}
+
 .gi-2x{font-size: 2em;}
 .gi-3x{font-size: 3em;}
 .gi-4x{font-size: 4em;}
@@ -35,6 +112,10 @@
 
 .breadcrumb > .active {color: #777 !important;}
 
+/* .post-content {
+  width: calc(100% - 250px);
+} */
+
 .post-content img {
     margin: 12px 0 3px 0;
     width: auto;
@@ -61,6 +142,7 @@ ul.nav.nav-pills li {
 .post-summary {
     margin-bottom:12px;
 }
+
 
 .bs-example{
     margin: 20px;
@@ -243,7 +325,6 @@ background-color: #347DBE;
 .nav li a {
     line-height: 18px;
     padding: 2px 10px;
-    background-color: #f1f1f1;
 }
 .nav li.draft-notice {
     /* we don't want the draft water mark to make this hard to notice */
@@ -271,7 +352,7 @@ background-color: #347DBE;
   line-height: 30px;
 }
 
-ul#mysidebar {
+ul#sidebar {
     border-radius:0;
 }
 
@@ -560,9 +641,7 @@ ol.series li {
     display:block;
 }
 
-#mysidebar .nav ul {
-    background-color: #FAFAFA;
-}
+
 .nav ul.series li {
     list-style: decimal;
     font-size:12px;
@@ -673,21 +752,14 @@ span.soft {
 }
 
 @media (max-width: 990px) {
-    #mysidebar {
+    #sidebar {
         position: relative;
-    }
-}
-
-@media (min-width: 1000px) {
-
-    ul#mysidebar {
-        width: 225px;
     }
 }
 
 @media (max-width: 900px) {
 
-    ul#mysidebar {
+    ul#sidebar {
         max-width: 100%;
     }
 }

@@ -7,13 +7,15 @@ layout: default
    <h1 class="title-main">{{ page.title }}</h1>
 </header>
 
-    {% unless page.toc == false %}
-    {% include toc.html %}
-    {% endunless %}
+<div class="container">
+  <nav class="toc float-right justify-content-end">
+  {{page.document | tocify_asciidoc }}
+</nav>
+  <section class="content">
+     {{ content }}
+  </section>
 
-<section class="content">
-   {{content}}
-</section>
+
 
 <!-- Adds tags, if any -->
     <div class="tags">
@@ -40,3 +42,4 @@ layout: default
       {% endif %}
    </nav>
     {% endif %}
+</div>

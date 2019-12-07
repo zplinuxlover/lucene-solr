@@ -57,7 +57,7 @@ script {
     display: none!important;
 }
 
-html {
+html, body, p {
     font-family: 'Noto Sans', sans-serif;
     -ms-text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
@@ -990,6 +990,7 @@ p a > code:hover
 #content
 {
     margin-top: 1.25em;
+    width: calc(100% - 250px);
 }
 
 #content:before
