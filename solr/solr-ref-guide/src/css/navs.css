@@ -1,0 +1,569 @@
+/** This CSS covers all navigation elements: sidebar, topnav,
+    bottom scrollnav, footer, and in-page TOCs **/
+
+/** === GENERAL NAV ELEMENTS === **/
+
+a.dropdown-toggle,
+.navbar-inverse .navbar-nav > li > a  {
+    margin-left: 10px;
+}
+
+.nav ul.series li {
+    list-style: decimal;
+    font-size:12px;
+}
+
+.nav ul.series li a:hover {
+    background-color: gray;
+}
+.nav ul.series {
+    padding-left: 30px;
+}
+
+.nav ul.series {
+    background-color: #FAFAFA;
+}
+
+.nav > li.active > a {
+    background-color: #262130;
+}
+
+.nav > li > a:hover {
+    background-color: #FF833D;
+}
+
+div.navbar-collapse .dropdown-menu > li > a:hover {
+    background-color: #D9411E;
+}
+
+.nav li.thirdlevel > a {
+    background-color: #FAFAFA !important;
+    color: #FF833D;
+    font-weight: bold;
+}
+
+li.dropdownActive a {
+    font-weight: bold;
+}
+
+/** === LEFT SIDEBAR === **/
+
+#sidebar {
+    width: 275px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 999;
+    background: #305CB3;
+    transition: all 0.3s;
+}
+
+#sidebar.active {
+  margin-left: -275px;
+}
+
+
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: -250px;
+    }
+    #sidebar.active {
+        margin-left: 0;
+    }
+}
+
+.sidebar-header {
+  padding-left: 5px;
+  color: #fff;
+}
+
+.sidebar-header h4 {
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.sidebar-header a {
+  color: #fff;
+}
+
+#mysidebar.nav a {
+  color: #fff;
+}
+
+#mysidebar.nav > li {
+    width: 275px;
+}
+
+#mysidebar.nav ul {
+    background-color: #FF833D;
+}
+
+#mysidebar.nav ul li a {
+  background-color: #FF833D;
+  font-weight: bold;
+  color: white;
+  border: none;
+}
+
+
+
+@media (max-width: 990px) {
+    #sidebar {
+        position: relative;
+    }
+}
+
+@media (max-width: 900px) {
+
+    ul#sidebar {
+        max-width: 100%;
+    }
+}
+
+/* navgoco sidebar styles (customized) */
+.nav,
+.nav ul,
+.nav li {
+    list-style: none;
+}
+
+.nav ul {
+    padding: 0;
+    /*margin: 0 0 0 18px;*/
+    margin:0;
+}
+
+.nav {
+    /* padding: 4px;*/
+    padding:0;
+    margin: 0;
+}
+
+.nav > li {
+    margin: 1px 0;
+}
+
+.nav > li li {
+    margin: 2px 0;
+}
+
+.nav a {
+    color: #333;
+    display: block;
+    outline: none;
+    text-decoration: none;
+}
+
+.nav li > a > span {
+    float: right;
+    font-size: 19px;
+    font-weight: bolder;
+}
+
+
+.nav li > a > span:after {
+    content: '\25be';
+}
+.nav li.open > a > span:after {
+    content: '\25b4';
+}
+
+.nav a:hover,
+.nav a:focus,
+.nav li.active > a {
+    background-color: #8D8D8D;
+    color: #f5f5f5;
+}
+
+.nav > li.active > a  {
+background-color: #347DBE;
+}
+
+.nav li a {
+    line-height: 18px;
+    padding: 2px 10px;
+}
+.nav li.draft-notice {
+    /* we don't want the draft water mark to make this hard to notice */
+    background-color: rgb(255, 255, 255);
+    padding: 0px 0px 10px 0px;
+
+}
+.nav li.draft-notice a,
+.nav li.draft-notice a:hover,
+.nav li.draft-notice a:active .nav li.draft-notice a:focus {
+    display: inline;
+    color: #2156a5;
+    text-decoration: underline;
+
+    position: inherit;
+    line-height: inherit;
+    padding: inherit;
+    background-color: inherit;
+}
+
+.nav > li > a {
+    line-height: 20px;
+    padding: 4px 10px;
+}
+
+.nav-pills > li > a {
+  line-height: 30px;
+}
+
+ul#sidebar {
+    border-radius:0;
+}
+
+ul.nav li ul {
+   font-size: 10pt;
+}
+
+.nav ul li a {
+    background-color: #FAFAFA;
+}
+
+.nav li a {
+    padding-right:10px;
+}
+
+.nav li a:hover {
+    background-color: #8D8D8D;
+}
+
+.nav ul li a {
+    border-top:1px solid whitesmoke;
+    padding-left:10px;
+}
+/* end navgoco sidebar */
+
+div.sidebarTitle {
+    color: #015CAE;
+}
+
+li.sidebarTitle {
+    margin-top:40px;
+    font-weight:normal;
+    font-size:120%;
+    color: #262130;
+    margin-bottom:10px;
+    margin-left: 5px;
+}
+
+/* indent extra nav levels
+   TODO: is there any easy way to do this that just incrementally applies to anything below sb-level2?
+         ...w/o assuming sb-level4 is as deep as we go?
+*/
+ul#mysidebar li.sb-level3 a {
+   padding-left: 20px;
+}
+ul#mysidebar li.sb-level4 a {
+   padding-left: 40px;
+}
+
+/* we can style the 'current-tree' hierarchy in the sidebar independently of the 'active' page as
+   the user clicks around expanding/collapsing the nav menus w/o clicking a link to load a diff page
+
+   For now:
+    - the 'current' page title is always bolder if 'active' (ie: visible)
+    - if the 'current' page is not 'active'/visible, then the closest ancestor that *is* 'active'/visible
+      will be bolded -- reminding the reader what section of the doc they are currently in.
+*/
+ul#mysidebar li.current-tree > a {
+    font-weight: bolder;
+}
+ul#mysidebar li.current-tree.active > a {
+    font-weight: inherit;
+}
+ul#mysidebar li.current.active > a {
+    font-weight: bolder;
+}
+
+/** === TOP NAVBAR === **/
+
+.navbar .container {
+  margin-left: 275px;
+  border: solid;
+  border-color: whitesmoke;
+  background-color: white;
+}
+
+.navbar-inverse .navbar-nav > li > a {
+    background-color: transparent;
+    margin-top:10px;
+}
+
+.navbar-inverse .navbar-nav > .active > a,
+.navbar-inverse .navbar-nav > .active > a:hover,
+.navbar-inverse .navbar-nav > .active > a:focus {
+    border-radius:5px;
+}
+
+.navbar-inverse .navbar-nav>.open>a,
+.navbar-inverse .navbar-nav>.open>a:focus,
+.navbar-inverse .navbar-nav>.open>a:hover {
+    border-radius: 5px;
+}
+
+.navbar-inverse {
+    background-color: #D9411E;
+    border-color: #015CAE;
+}
+
+.navbar-inverse .navbar-nav > .open > a,
+.navbar-inverse .navbar-nav > .open > a:hover,
+.navbar-inverse .navbar-nav > .open > a:focus {
+    color: #015CAE;
+}
+
+.navbar-inverse .navbar-nav > .open > a,
+.navbar-inverse .navbar-nav > .open > a:hover,
+.navbar-inverse .navbar-nav > .open > a:focus {
+    background-color: #015CAE;
+    color: #ffffff;
+}
+
+/* not sure if using this ...*/
+.navbar-inverse .navbar-collapse,
+.navbar-inverse .navbar-form {
+    border-color: #248ec2 !important;
+}
+
+.navbar-inverse .navbar-nav > .active > a,
+.navbar-inverse .navbar-nav > .active > a:hover,
+.navbar-inverse .navbar-nav > .active > a:focus {
+    background-color: #D9411E;
+}
+
+@media (max-width: 767px) {
+    .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {
+        color: #444;
+    }
+}
+
+/** === TOCs === **/
+
+nav.toc ul li {
+    margin: 8px 0 8px 22px;
+    list-style: disc;
+    line-height: 1.25;
+}
+
+nav.toc ul {
+    background-color: #f1f1f1;;
+    padding: 5px;
+    border-radius: 5px;
+    color: gray;
+}
+
+nav.toc ul li ul {
+    padding-left: 8px;
+}
+
+nav.toc ul li ul li {
+    list-style: circle;
+    margin: 5px 0 0 0;
+}
+
+nav.toc ul li ul li ul li {
+  list-style: square;
+}
+
+nav.toc.section-toc >ul::before {
+    content: "In this section";
+}
+nav.toc >ul::before {
+    content: "On this Page";
+    font-weight: bold;
+    color: #555;
+    text-align:center;
+    margin-left:auto;
+    margin-right:auto;
+    width:70px;
+    padding-top:20px;
+    padding-bottom:20px;
+    padding-left:10px;
+}
+
+.toc > ul
+{
+    margin-left: .125em;
+}
+
+.toc ul.sectlevel0 > li > a
+{
+    font-weight: bold;
+}
+
+.toc ul.sectlevel0 ul.sectlevel1
+{
+    margin: .5em 0;
+}
+
+.toc ul
+{
+    list-style-type: none;
+    font-family: 'Noto Sans', sans-serif;
+}
+
+.toc a
+{
+    text-decoration: none;
+}
+
+.toc a:active
+{
+    text-decoration: underline;
+}
+
+@media only screen
+       and (min-width : 768px)
+{
+    body.toc2
+    {
+        padding-right: 0;
+        padding-left: 15em;
+    }
+
+    #toc.toc2
+    {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        overflow: auto;
+        margin-top: 0!important;
+        padding: 1.25em 1em;
+        width: 15em;
+        height: 100%;
+        border-top-width: 0!important;
+        border-right: 1px solid #efefed;
+        border-bottom-width: 0!important;
+        background-color: #f8f8f7;
+    }
+
+    #toc.toc2 > ul
+    {
+        margin-bottom: 0;
+        font-size: .9em;
+    }
+
+    #toc.toc2 ul ul
+    {
+        margin-left: 0;
+        padding-left: 1em;
+    }
+
+    #toc.toc2 ul.sectlevel0 ul.sectlevel1
+    {
+        margin-top: .5em;
+        margin-bottom: .5em;
+        padding-left: 0;
+    }
+
+    body.toc2.toc-right
+    {
+        padding-right: 15em;
+        padding-left: 0;
+    }
+
+    body.toc2.toc-right #toc.toc2
+    {
+        right: 0;
+        left: auto;
+        border-right-width: 0;
+        border-left: 1px solid #efefed;
+    }
+}
+
+@media only screen
+       and (min-width : 1280px)
+{
+    body.toc2
+    {
+        padding-right: 0;
+        padding-left: 20em;
+    }
+
+    #toc.toc2
+    {
+        width: 20em;
+    }
+
+    #toc.toc2 > ul
+    {
+        font-size: .95em;
+    }
+
+    #toc.toc2 ul ul
+    {
+        padding-left: 1.25em;
+    }
+
+    body.toc2.toc-right
+    {
+        padding-right: 20em;
+        padding-left: 0;
+    }
+}
+
+#content #toc
+{
+    margin-bottom: 1.25em;
+    padding: 1.25em;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #e0e0dc;
+    -webkit-border-radius: 4px;
+            border-radius: 4px;
+    background: #f8f8f7;
+}
+
+#content .toc > :first-child
+{
+    margin-top: 0;
+}
+
+#content .toc > :last-child
+{
+    margin-bottom: 0;
+}
+
+/** === BOTTOM PAGE NAV (scrollnav) === **/
+
+.scrollnav {
+    margin-bottom: 1em;
+}
+.scrollnav .prev {
+    text-align: left;
+    float: left;
+    font-size: inherit;
+}
+.scrollnav .prev:before {
+    padding-right: 0.5em;
+    content: "\25C0";
+    display: inline-block; /* text-decoration: none doesn't work, but this does */
+}
+.scrollnav .next {
+    text-align: right;
+    float: right;
+    font-size: inherit;
+}
+.scrollnav .next:after {
+    padding-left: 0.5em;
+    content: " \25B6";
+    display: inline-block; /* text-decoration: none doesn't work, but this does */
+}
+
+/** === FOOTER === **/
+footer {
+    font-size: smaller;
+    padding-top: 10px;
+}
+
+.footer {
+    text-align: right;
+}

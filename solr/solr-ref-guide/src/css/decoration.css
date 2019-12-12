@@ -1,0 +1,144 @@
+/** This CSS defines decoration elements, such as buttons, bootstrap-based
+    components (pills, jumbotrons), horizontal lines **/
+
+/** === BUTTONS === **/
+
+.btn-info,
+a[data-toggle].btn-info {
+  background-color: #F35B38;
+  font-size: 16px;
+  text-decoration: none;
+  color: #FFFFFF;
+  border: none;
+}
+
+/* Used for nav buttons */
+.btn-primary {
+    color: #F35B38;
+    background-color: transparent;
+    border-color: #CDCECF;
+    font-weight: bold;
+}
+
+/* Used for nav buttons */
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.open .dropdown-toggle.btn-primary {
+    background-color: #305CB3;
+    border-color: #E6E7E8;
+}
+
+/* used for Download Solr button on docs home page */
+.btn-home {
+  color: #ffffff;
+  background-color: #F35B38;
+  border-color: #E6E7E8;
+}
+
+.btn-default {
+    margin-bottom: 10px;
+}
+
+button.btn.btn-default.btn-lg.modalButton1 {
+    margin-left: -20px;
+}
+
+button.cursorNorm {
+    cursor: default;
+}
+
+
+
+/** === BOOTSTRAP TABS/PILLS === **/
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+    background-color: #248ec2;
+    color: white;
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus,
+.nav-pills > li.active > a,
+.nav-pills > li.active > a:hover,
+.nav-pills > li.active > a:focus
+ {
+    background-color: #FF833D;
+    color: white;
+}
+
+ul.nav.nav-pills li {
+  margin-left: 5px;
+}
+
+.tab-content {
+    padding: 0px;
+}
+
+
+/** === BOOTSTRAP JUMBOTRONS === **/
+
+/* Changes styling for Bootstrap "jumbotron" component used on index.html
+   Will be inherited by all jumbotron segments used anywhere */
+.jumbotron {
+  background-color: #FAFAFA;
+  border: solid 2px;
+  border-color: #D9411E;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+/* Adds a custom "lead" style for use in index.html jumbotron box */
+.lead-homepage {
+  font-size: 1.21875em;
+  line-height: 1.3;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+/** === HORIZONTAL RULES === **/
+
+hr {
+    border: 0;
+    border-bottom: 1px dashed #ccc;
+    background: #999;
+    margin: 30px 0;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+hr.faded {
+    border: 0;
+    height: 1px;
+    background-image: -webkit-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
+    background-image:    -moz-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
+    background-image:     -ms-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
+    background-image:      -o-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
+}
+
+hr.shaded {
+    height: 12px;
+    border: 0;
+    box-shadow: inset 0 6px 6px -6px rgba(0,0,0,0.5);
+    margin-top: 70px;
+    background: white;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+/** === ANCHOR === **/
+
+.anchorjs-link:hover {
+    color: #216f9b;
+}
+
+*:hover > .anchorjs-link {
+    transition: color .25s linear;
+    text-decoration: none;
+}
