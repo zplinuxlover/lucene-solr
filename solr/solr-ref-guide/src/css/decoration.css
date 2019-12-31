@@ -50,15 +50,7 @@ button.cursorNorm {
 }
 
 
-
 /** === BOOTSTRAP TABS/PILLS === **/
-
-.nav-tabs > li.active > a,
-.nav-tabs > li.active > a:hover,
-.nav-tabs > li.active > a:focus {
-    background-color: #248ec2;
-    color: white;
-}
 
 .nav-tabs > li.active > a,
 .nav-tabs > li.active > a:hover,
@@ -75,10 +67,43 @@ ul.nav.nav-pills li {
   margin-left: 5px;
 }
 
+.nav-pills > li {
+  float: left;
+}
+
+.nav-pills > li > a {
+  border-radius: 5px;
+}
+
+.nav-pills > li + li {
+  margin-left: 2px;
+}
+
 .tab-content {
     padding: 0px;
 }
 
+.tab-content > .tab-pane,
+.tab-content > .content > .tab-pane,
+.pill-content > .pill-pane,
+.tab-content > .content > .tab-pane {
+  display: none;
+}
+
+.tab-content > .active,
+.tab-content > .content > .active,
+.pill-content > .active {
+  display: block;
+}
+
+a.list-group-item.active > .badge,
+.nav-pills > .active > a > .badge {
+  color: #74ab50;
+  background-color: #ffffff;
+}
+.nav-pills > li > a > .badge {
+  margin-left: 3px;
+}
 
 /** === BOOTSTRAP JUMBOTRONS === **/
 

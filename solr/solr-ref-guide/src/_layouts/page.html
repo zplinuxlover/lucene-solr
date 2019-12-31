@@ -34,12 +34,14 @@ layout: default
     {% assign scrollnav = site.data.scrollnav[page_id] %}
     {% if scrollnav %}
     <nav class="scrollnav row">
+      <div class="col-lg-12">
       {% if scrollnav.prev %}
-      <a class="btn btn-primary prev" href="{{ scrollnav.prev.url }}">{{ scrollnav.prev.title }}</a>
+      <a class="btn btn-primary prev float-left" href="{{ scrollnav.prev.url }}">{{ scrollnav.prev.title }}</a>
       {% endif %}
       {% if scrollnav.next %}
-      <a class="btn btn-primary next" href="{{ scrollnav.next.url }}">{{ scrollnav.next.title }}</a>
+      <a class="btn btn-primary next float-right" href="{{ scrollnav.next.url }}">{{ scrollnav.next.title }}</a>
       {% endif %}
+      </div>
    </nav>
     {% endif %}
 </div>

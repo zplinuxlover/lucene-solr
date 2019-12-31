@@ -29,7 +29,7 @@ $( document ).ready(function() {
     $(this).addClass("tab-content");
     var nav_ul = $("<ul>", { "class": "nav nav-pills" });
     $(".tab-pane", this).each(function(tab_index) {
-      var pill_li = $("<li>");
+      var pill_li = $("<li>", { "class": "nav-item" });
       // force the first tab to always be the active tab
       if (0 == tab_index) {
         $(this).addClass("active");
@@ -39,7 +39,7 @@ $( document ).ready(function() {
         $(this).removeClass("active");
       }
 
-      var pill_a = $("<a>", { "data-toggle" : "pill" } );
+      var pill_a = $("<a>", { "data-toggle": "pill" }, { "class": "nav-link" } );
       if ($(this)[0].hasAttribute("id")) {
         pill_a.attr("href", "#" + $(this).attr("id"));
       } else {

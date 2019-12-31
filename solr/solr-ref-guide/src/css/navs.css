@@ -46,6 +46,24 @@ li.dropdownActive a {
     font-weight: bold;
 }
 
+.nav {
+  margin-bottom: 0;
+  padding-left: 0;
+  list-style: none;
+}
+.nav:before,
+.nav:after {
+  content: " ";
+  /* 1 */
+
+  display: table;
+  /* 2 */
+
+}
+.nav:after {
+  clear: both;
+}
+
 /** === LEFT SIDEBAR === **/
 
 #sidebar {
@@ -284,8 +302,11 @@ ul#mysidebar li.current.active > a {
 
 /** === TOP NAVBAR === **/
 
-.navbar .container {
+.navbar.bg-light {
   margin-left: 275px;
+}
+
+.navbar .container {
   border: solid;
   border-color: whitesmoke;
   background-color: white;
@@ -345,6 +366,11 @@ ul#mysidebar li.current.active > a {
 }
 
 /** === TOCs === **/
+
+nav.toc {
+  padding-left: 10px;
+  max-width: 350px;
+}
 
 nav.toc ul li {
     margin: 8px 0 8px 22px;

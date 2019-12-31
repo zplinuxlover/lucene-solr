@@ -529,10 +529,9 @@ h6 small
     line-height: 0;
 }
 
-/* Pad the page title and sidebar header */
-h1.title-main,
-li.sidebarTitle {
-  padding-top: 20px;
+/* Pad the page title */
+h1.title-main {
+  padding: 20px 0px 10px 10px;
 }
 
 h1
@@ -919,7 +918,6 @@ p a > code:hover
     color: rgba(0,0,0,.9);
 }
 
-#content,
 #footer,
 #footnotes,
 #header
@@ -953,7 +951,8 @@ p a > code:hover
 #content
 {
     margin-top: 1.25em;
-    width: calc(100% - 250px);
+    margin-left: 275px;
+    padding-left: 10px;
 }
 
 #content:before
@@ -966,6 +965,7 @@ span.projectTitle
     font-weight: bold;
     font-family: 'Noto Sans', sans-serif;
     font-size: 14pt;
+    padding-left: 2px;
 }
 
 #header > h1:first-child
@@ -1270,6 +1270,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
     -webkit-box-shadow: 0 1px 4px #e0e0dc;
             box-shadow: 0 1px 4px #e0e0dc;
     background: #fff;
+    width: 100%;
 }
 
 .exampleblock > :first-child
