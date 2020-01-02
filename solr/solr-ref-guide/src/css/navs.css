@@ -256,6 +256,11 @@ ul.nav li ul {
     border-top:1px solid whitesmoke;
     padding-left:10px;
 }
+
+.col-lg-12 .nav li a {
+  background-color: white
+}
+
 /* end navgoco sidebar */
 
 div.sidebarTitle {
@@ -301,6 +306,15 @@ ul#mysidebar li.current.active > a {
 }
 
 /** === TOP NAVBAR === **/
+
+/* The <span> tag with id="projectTitle" is used in the top navbar */
+span.projectTitle
+{
+    font-weight: bold;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 14pt;
+    padding-left: 2px;
+}
 
 .navbar.bg-light {
   margin-left: 275px;
@@ -636,4 +650,15 @@ footer {
 {
     color: rgba(255,255,255,.8);
     line-height: 1.44;
+}
+
+
+/* FAQ page */
+#accordion .panel-heading {
+    font-size: 12px;
+}
+
+a.accordion-toggle, a.accordion-collapsed {
+    font-size: 14px;
+    text-decoration: none;
 }

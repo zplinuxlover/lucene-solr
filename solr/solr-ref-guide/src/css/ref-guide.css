@@ -33,7 +33,9 @@
    src: url(../fonts/Inconsolata/Inconsolata-Bold.ttf);
 }
 
-html, body, p {
+html,
+body,
+p {
     font-family: 'Noto Sans', sans-serif;
     -ms-text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
@@ -66,10 +68,6 @@ summary {
     display: block;
 }
 
-body {
-    margin: 0;
-}
-
 body
 {
     position: relative;
@@ -87,6 +85,12 @@ body.DRAFT {
     background-image: url("../images/draft-background.png");
 }
 
+/** Sets page wrapper and sidebar **/
+.wrapper {
+    display: flex;
+    width: 100%;
+}
+
 *,
 *:after,
 *:before
@@ -96,9 +100,9 @@ body.DRAFT {
             box-sizing: border-box;
 }
 
-b,
-strong {
-    font-weight: bold;
+.print-only
+{
+    display: none!important;
 }
 
 b,
@@ -115,41 +119,29 @@ i
     line-height: inherit;
 }
 
-#footer,
-#footnotes,
-#header
+i.border {
+    padding: 10px 20px;
+    background-color: whitesmoke;
+}
+
+/* Ref Guide paragraph content is in a <section> tag with id="content" selector */
+#content
 {
-    margin: 0 auto 0 auto;
-    max-width: 62.5em;
-    width: 100%;
+    margin-top: 1.25em;
+    margin-left: 275px;
+    padding-left: 10px;
 }
 
 #content:after,
-#content:before,
-#footer:after,
-#footer:before,
-#footnotes:after,
-#footnotes:before,
-#header:after,
-#header:before
+#content:before
 {
     display: table;
     content: ' ';
 }
 
 #content:after,
-#footer:after,
-#footnotes:after,
-#header:after
 {
     clear: both;
-}
-
-#content
-{
-    margin-top: 1.25em;
-    margin-left: 275px;
-    padding-left: 10px;
 }
 
 #content:before
@@ -167,24 +159,76 @@ i
     color: rgba(0,0,0,.85);
 }
 
-span.projectTitle
-{
-    font-weight: bold;
-    font-family: 'Noto Sans', sans-serif;
-    font-size: 14pt;
-    padding-left: 2px;
+/* Special rules for index.html so rows are all the same height */
+.row.match-my-cols {
+    display: table;
 }
 
-span.icon > .fa
-{
-    cursor: default;
+.row.match-my-cols [class*="col-"] {
+    float: none;
+    display: table-cell;
+    vertical-align: top;
 }
 
-.print-only
+/* General text paragraphs */
+
+blockquote,
+dd,
+div,
+dl,
+dt,
+form,
+li,
+ol,
+p,
+pre,
+td,
+th,
+ul
 {
-    display: none!important;
+    margin: 0;
+    padding: 0;
+    direction: ltr;
 }
 
+p
+{
+    margin-bottom: 1.25em;
+    font-weight: 400;
+    font-size: 1em;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+p aside
+{
+    font-style: italic;
+    font-size: .875em;
+    line-height: 1.35;
+}
+
+p,
+td.content
+{
+    letter-spacing: -.01em;
+}
+
+p strong,
+td.content strong
+{
+    letter-spacing: -.005em;
+}
+
+blockquote,
+dt,
+p,
+td.content
+{
+    font-size: 1.0625rem;
+}
+
+
+/* Rules for <code> and <pre> tags */
 code
 {
     color: rgba(0,0,0,.9);
@@ -224,47 +268,6 @@ td strong code {
   font-weight: bold;
 }
 
-p,
-td.content
-{
-    letter-spacing: -.01em;
-}
-
-p strong,
-td.content strong
-{
-    letter-spacing: -.005em;
-}
-
-blockquote,
-dt,
-p,
-td.content
-{
-    font-size: 1.0625rem;
-}
-
-p
-{
-    margin-bottom: 1.25rem;
-}
-
-p
-{
-    margin-bottom: 1.25em;
-    font-weight: 400;
-    font-size: 1em;
-    font-family: inherit;
-    line-height: 1.6;
-}
-
-p aside
-{
-    font-style: italic;
-    font-size: .875em;
-    line-height: 1.35;
-}
-
 pre,
 pre > code
 {
@@ -275,25 +278,20 @@ pre > code
    white-space: pre-wrap;
 }
 
-.sidebarblock > .title,
-blockquote,
-dd,
-div,
-dl,
-dt,
-form,
-li,
-ol,
-p,
-pre,
-td,
-th,
-ul
-{
-    margin: 0;
-    padding: 0;
-    direction: ltr;
+table code {
+  background-color: transparent;
 }
+
+a code {
+    color: #2156a5;
+}
+
+table th code {
+    color: white;
+}
+
+
+/* Titles and Headings */
 
 .sidebarblock > .title,
 h1,
@@ -314,6 +312,18 @@ h6
     line-height: 1.2;
     letter-spacing: -.01em;
     page-break-after: avoid;
+}
+
+/* make room for the nav bar */
+h1[id],
+h2[id],
+h3[id],
+h4[id],
+h5[id],
+h6[id],
+dt[id]{
+   padding-top: 60px;
+   margin-top: -40px
 }
 
 .sidebarblock > .title small,
@@ -432,34 +442,37 @@ h6 strong
     clear: both;
 }
 
+.clearfix {
+    clear: both;
+}
+
 /* === End OVERALL CONTENT === */
 
 
 
-/** === GENERAL LINKS (a href) === **/
+/** === GENERAL LINKS (<a href>) === **/
 /* See also link styling for nav elements in navs.css and
    special content sections throughout this file */
-
-a {
-    background: transparent;
-}
 
 a
 {
     color: #2156a5;
     text-decoration: underline;
     line-height: inherit;
+    background: transparent;
+}
+
+p.external a {
+    text-align:right;
+    font-size:12px;
+    color: #0088cc;
+    display:inline;
 }
 
 a:focus,
 a:hover
 {
     color: #1d4b8f;
-}
-
-a img
-{
-    border: none;
 }
 
 a:focus {
@@ -470,6 +483,14 @@ a:focus {
 a:active,
 a:hover {
     outline: 0;
+}
+
+a[data-toggle] {
+    color: #305CB3;
+}
+
+a.fa.fa-envelope-o.mailto {
+    font-weight: 600;
 }
 
 /* Adds an icon after external links, using FontAwesome */
@@ -530,7 +551,12 @@ h6 > a.link:hover
 
 /** === LISTS === **/
 
-/* Lists */
+/* Ordered (<ol>) and Unordered (<ul>) Lists Only */
+
+.post-content ol li,
+.post-content ul li {
+    margin: 10px 0;
+}
 
 dl,
 ol,
@@ -551,40 +577,9 @@ ul.no-bullet
     margin-left: 1.5em;
 }
 
-ul li ol,
-ul li ul
+ol
 {
-    margin-bottom: 0;
-    margin-left: .25em;
-    font-size: 1em;
-    padding-left: 10px;
-}
-
-ul.circle li ul,
-ul.disc li ul,
-ul.square li ul
-{
-    list-style: inherit;
-}
-
-ul.square
-{
-    list-style-type: square;
-}
-
-ul.circle
-{
-    list-style-type: circle;
-}
-
-ul.disc
-{
-    list-style-type: disc;
-}
-
-ul.no-bullet
-{
-    list-style: none;
+    margin-left: 1.75em;
 }
 
 ol li ol,
@@ -594,25 +589,29 @@ ol li ul
     margin-left: 1.25em;
 }
 
-ol
-{
-    margin-left: 1.75em;
-}
-
-ul li ol
-{
-    margin-left: 1.5em;
-}
-
-dl dd
-{
-    margin-left: 1.125em;
-}
-
-dl dd:last-child,
-dl dd:last-child > :last-child
+ul li ol,
+ul li ul
 {
     margin-bottom: 0;
+    margin-left: .25em;
+    font-size: 1em;
+    padding-left: 10px;
+}
+
+ol li ol li {
+  list-style-type: lower-alpha;
+}
+
+ol li ul li {
+  list-style-type: disc;
+}
+
+ol li ul li ol li {
+    list-style: decimal;
+}
+
+ol li ul li ol li ul li {
+    list-style: disc;
 }
 
 .olist .olist,
@@ -675,10 +674,31 @@ ul.inline > li > *
     display: block;
 }
 
-.unstyled dl dt
+ul.circle li ul,
+ul.disc li ul,
+ul.square li ul
 {
-    font-weight: 400;
-    font-style: normal;
+    list-style: inherit;
+}
+
+ul.square
+{
+    list-style-type: square;
+}
+
+ul.circle
+{
+    list-style-type: circle;
+}
+
+ul.disc
+{
+    list-style-type: disc;
+}
+
+ul.no-bullet
+{
+    list-style: none;
 }
 
 ol.arabic
@@ -716,6 +736,23 @@ ol.lowergreek
     list-style-type: lower-greek;
 }
 
+/* Description Lists (<dl>) Only */
+
+dl dd
+{
+    margin-left: 1.125em;
+}
+
+dl dd:last-child,
+dl dd:last-child > :last-child
+{
+    margin-bottom: 0;
+}
+
+dl dt p {
+    margin-left:20px;
+}
+
 dl dt,
 dl dt code
 {
@@ -723,11 +760,33 @@ dl dt code
     font-weight: bold;
 }
 
+dl dd {
+    margin-top:10px;
+    margin-bottom:10px;
+}
+
 dl dd
 {
     margin-bottom: 1.25em;
 }
 
+dl.dl-horizontal dd {
+    padding-top: 20px;
+}
+
+dd {
+  margin-left:20px;
+}
+
+.unstyled dl dt
+{
+    font-weight: 400;
+    font-style: normal;
+}
+
+
+/* Callout lists (class="colist" - the items that correspond to a callout
+   number) and Horiztonal-format description lists (class="hdlist") */
 
 .colist > table,
 .hdlist > table
@@ -782,18 +841,32 @@ td.hdlist2
 
 img
 {
+    display: inline-block;
+    vertical-align: middle;
     border: 0;
-}
-
-img
-{
     -ms-interpolation-mode: bicubic;
 }
 
-img
+.post-content img {
+    margin: 12px 0 3px 0;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.post-content img.inline {
+    margin:0;
+    margin-bottom:6px;
+}
+
+li img {
+  clear:both;
+}
+
+a img
 {
-    display: inline-block;
-    vertical-align: middle;
+    border: none;
 }
 
 svg:not(:root)
@@ -814,6 +887,14 @@ object
     height: auto;
 }
 
+figcaption {
+    padding-bottom:12px;
+    padding-top:6px;
+    max-width: 90%;
+    margin-bottom:20px;
+    font-style: italic;
+    color: gray;
+}
 
 .th,
 .thumb
@@ -885,15 +966,11 @@ a.image
 
 table
 {
-    border-spacing: 0;
-    border-collapse: collapse;
-}
-
-table
-{
     margin-bottom: 1.25em;
     border: solid 1px #dedede;
     background: #fff;
+    border-spacing: 0;
+    border-collapse: collapse;
 }
 
 table tfoot,
@@ -946,6 +1023,32 @@ table.tableblock > caption.title
     white-space: nowrap;
 }
 
+table.dataTable thead {
+    background-color: #444;
+}
+
+section table tr.success {
+    background-color: #dff0d8 !important;
+}
+
+table tr.info {
+    background-color: #d9edf7 !important;
+}
+
+section table tr.warning, table tr.testing, table tr.testing > td.sorting_1  {
+    background-color: #fcf8e3 !important;
+}
+section table tr.danger, table tr.preference, table tr.preference > td.sorting_1  {
+    background-color: #f2dede !important;
+}
+
+table.profile thead tr th {
+    background-color: #248ec2;
+}
+
+table.request thead tr th {
+    background-color: #ED1951;
+}
 
 table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
 {
@@ -1112,7 +1215,7 @@ td > div.verse
 
 /** === CODE CALLOUTS === **/
 /* Callout Numbers are displayed inline in code examples with explanations
-   underneath. */
+   underneath. See Callout lists above for styles of the explanations. */
 
 .conum[data-value]
 {
@@ -1285,6 +1388,13 @@ blockquote
     border-left: 1px solid #ddd;
 }
 
+blockquote,
+blockquote p
+{
+    color: rgba(0,0,0,.85);
+    line-height: 1.6;
+}
+
 blockquote cite
 {
     display: block;
@@ -1301,13 +1411,6 @@ blockquote cite a,
 blockquote cite a:visited
 {
     color: rgba(0,0,0,.6);
-}
-
-blockquote,
-blockquote p
-{
-    color: rgba(0,0,0,.85);
-    line-height: 1.6;
 }
 
 .audioblock,
@@ -1978,6 +2081,12 @@ legend
 {
     padding: 0;
     border: 0;
+}
+
+video {
+    display: block;
+    margin: 30px 0;
+    border: 1px solid #c0c0c0;
 }
 
 embed,
