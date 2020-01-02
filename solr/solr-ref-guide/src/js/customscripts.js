@@ -39,7 +39,7 @@ $( document ).ready(function() {
         $(this).removeClass("active");
       }
 
-      var pill_a = $("<a>", { "data-toggle": "pill" }, { "class": "nav-link" } );
+      var pill_a = $("<a>", { "data-toggle" : "pill" } );
       if ($(this)[0].hasAttribute("id")) {
         pill_a.attr("href", "#" + $(this).attr("id"));
       } else {

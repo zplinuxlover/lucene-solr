@@ -1,7 +1,7 @@
-/** This CSS defines decoration elements, such as buttons, bootstrap-based
-    components (pills, jumbotrons), horizontal lines **/
+/** This CSS defines decoration elements, such as buttons, input boxes,
+    bootstrap-based components (pills, jumbotrons), horizontal lines, leads **/
 
-/** === BUTTONS === **/
+/** === BUTTONS & FORM ELEMENTS === **/
 
 .btn-info,
 a[data-toggle].btn-info {
@@ -49,6 +49,151 @@ button.cursorNorm {
     cursor: default;
 }
 
+
+button,
+input,
+select,
+textarea
+{
+    margin: 0;
+    font-size: 100%;
+    font-family: inherit;
+}
+
+button,
+input
+{
+    line-height: normal;
+}
+
+button,
+select
+{
+    text-transform: none;
+}
+
+button,
+html input[type='button'],
+input[type='reset'],
+input[type='submit']
+{
+    cursor: pointer;
+
+    -webkit-appearance: button;
+}
+
+button[disabled],
+html input[disabled]
+{
+    cursor: default;
+}
+
+input[type='checkbox'],
+input[type='radio']
+{
+    box-sizing: border-box;
+    padding: 0;
+}
+
+input[type='search']
+{
+    -webkit-box-sizing: content-box;
+       -moz-box-sizing: content-box;
+            box-sizing: content-box;
+
+    -webkit-appearance: textfield;
+}
+
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration
+{
+    -webkit-appearance: none;
+}
+
+button::-moz-focus-inner,
+input::-moz-focus-inner
+{
+    padding: 0;
+    border: 0;
+}
+
+textarea
+{
+    overflow: auto;
+    vertical-align: top;
+}
+
+textarea
+{
+    min-height: 50px;
+    height: auto;
+}
+
+select
+{
+    width: 100%;
+}
+
+.keyseq
+{
+    color: rgba(51,51,51,.8);
+}
+
+kbd
+{
+    display: inline-block;
+    margin: -.15em .15em 0 .15em;
+    padding: .2em .6em .2em .5em;
+    border: 1px solid #ccc;
+    -webkit-border-radius: 3px;
+            border-radius: 3px;
+    background-color: #f7f7f7;
+    -webkit-box-shadow: 0 1px 0 rgba(0,0,0,.2),
+    0 0 0 .1em white inset;
+            box-shadow: 0 1px 0 rgba(0,0,0,.2),
+    0 0 0 .1em #fff inset;
+    color: rgba(0,0,0,.8);
+    vertical-align: middle;
+    white-space: nowrap;
+    font-size: .75em;
+    line-height: 1.4;
+}
+
+.keyseq kbd:first-child
+{
+    margin-left: 0;
+}
+
+.keyseq kbd:last-child
+{
+    margin-right: 0;
+}
+
+.menu,
+.menuseq
+{
+    color: rgba(0,0,0,.8);
+}
+
+b.button:after,
+b.button:before
+{
+    position: relative;
+    top: -1px;
+    font-weight: 400;
+}
+
+b.button:before
+{
+    padding: 0 3px 0 2px;
+    content: '[';
+}
+
+b.button:after
+{
+    padding: 0 2px 0 3px;
+    content: ']';
+}
 
 /** === BOOTSTRAP TABS/PILLS === **/
 
@@ -105,6 +250,27 @@ a.list-group-item.active > .badge,
   margin-left: 3px;
 }
 
+/** === LEAD PARAGRAPHS === **/
+
+/* Defines size and line height for "lead" type sections, the first sentence of a page. */
+#preamble > .sectionbody > .paragraph:first-of-type p,
+.paragraph.lead > p,
+p.lead,
+#preamble > p:first-of-type
+{
+    font-size: 1.21875em;
+    line-height: 1.6;
+}
+
+/* Defines color for "lead" type sections, the first text on a page. */
+#preamble > .sectionbody > .paragraph:first-of-type p,
+.paragraph.lead > p,
+#preamble > p:first-of-type
+{
+    color: rgba(0,0,0,.85);
+}
+
+
 /** === BOOTSTRAP JUMBOTRONS === **/
 
 /* Changes styling for Bootstrap "jumbotron" component used on index.html
@@ -138,6 +304,22 @@ hr {
     margin-right: auto;
 }
 
+hr
+{
+    -moz-box-sizing: content-box;
+         box-sizing: content-box;
+    height: 0;
+}
+
+hr
+{
+    clear: both;
+    margin: 1.25em 0 1.1875em;
+    height: 0;
+    border: solid #ddddd8;
+    border-width: 1px 0 0;
+}
+
 hr.faded {
     border: 0;
     height: 1px;
@@ -157,7 +339,7 @@ hr.shaded {
     margin-bottom: 10px;
 }
 
-/** === ANCHOR === **/
+/** === ANCHORS === **/
 
 .anchorjs-link:hover {
     color: #216f9b;
@@ -166,4 +348,55 @@ hr.shaded {
 *:hover > .anchorjs-link {
     transition: color .25s linear;
     text-decoration: none;
+}
+
+#content h1 > a.anchor,
+.sidebarblock > .title > a.anchor,
+h2 > a.anchor,
+h3 > a.anchor,
+h4 > a.anchor,
+h5 > a.anchor,
+h6 > a.anchor
+{
+    position: absolute;
+    z-index: 1001;
+    display: block;
+    visibility: hidden;
+    margin-left: -1.5ex;
+    width: 1.5ex;
+    text-align: center;
+    text-decoration: none!important;
+    font-weight: 400;
+}
+
+#content h1 > a.anchor:before,
+.sidebarblock > .title > a.anchor:before,
+h2 > a.anchor:before,
+h3 > a.anchor:before,
+h4 > a.anchor:before,
+h5 > a.anchor:before,
+h6 > a.anchor:before
+{
+    display: block;
+    padding-top: .1em;
+    content: '\00A7';
+    font-size: .85em;
+}
+
+#content h1:hover > a.anchor,
+#content h1 > a.anchor:hover,
+.sidebarblock > .title:hover > a.anchor,
+.sidebarblock > .title > a.anchor:hover,
+h2:hover > a.anchor,
+h2 > a.anchor:hover,
+h3:hover > a.anchor,
+h3 > a.anchor:hover,
+h4:hover > a.anchor,
+h4 > a.anchor:hover,
+h5:hover > a.anchor,
+h5 > a.anchor:hover,
+h6:hover > a.anchor,
+h6 > a.anchor:hover
+{
+    visibility: visible;
 }
