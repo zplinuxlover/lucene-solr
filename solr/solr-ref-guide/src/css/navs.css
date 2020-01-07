@@ -67,28 +67,13 @@ li.dropdownActive a {
 /** === LEFT SIDEBAR === **/
 
 #sidebar {
-    width: 275px;
-    position: fixed;
+    position: sticky;
     top: 0;
     left: 0;
     height: 100vh;
     z-index: 999;
     background: #305CB3;
     transition: all 0.3s;
-}
-
-#sidebar.active {
-  margin-left: -275px;
-}
-
-
-@media (max-width: 768px) {
-    #sidebar {
-        margin-left: -250px;
-    }
-    #sidebar.active {
-        margin-left: 0;
-    }
 }
 
 .sidebar-header {
@@ -121,7 +106,6 @@ li.dropdownActive a {
 
 #mysidebar.nav ul li a {
   background-color: #FF833D;
-  font-weight: bold;
   color: white;
   border: none;
 }
@@ -204,6 +188,7 @@ background-color: #347DBE;
     line-height: 18px;
     padding: 2px 10px;
 }
+
 .nav li.draft-notice {
     /* we don't want the draft water mark to make this hard to notice */
     background-color: rgb(255, 255, 255);

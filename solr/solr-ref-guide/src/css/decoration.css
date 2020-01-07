@@ -218,6 +218,7 @@ ul.nav.nav-pills li {
 
 .nav-pills > li > a {
   border-radius: 5px;
+  background-color: #f1f1f1
 }
 
 .nav-pills > li + li {

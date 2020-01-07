@@ -1,13 +1,14 @@
 ---
 layout: default
 ---
+
 {% comment %}NOTE: page_id is also definied in default.html{% endcomment %}
 {% assign page_id = page.url | split: '/' | last | remove: '.html' %}
 <header class="header">
    <h1 class="title-main">{{ page.title }}</h1>
 </header>
 
-<div class="container">
+<div class="container-fluid">
   <nav class="toc float-right justify-content-end">
   {{page.document | tocify_asciidoc }}
 </nav>
