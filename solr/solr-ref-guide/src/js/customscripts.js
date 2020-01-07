@@ -17,16 +17,8 @@ $( document ).ready(function() {
     var nav_ul = $("<ul>", { "class": "nav nav-pills" });
     $(".tab-pane", this).each(function(tab_index) {
       var pill_li = $("<li>", { "class": "nav-item" });
-      // force the first tab to always be the active tab
-      if (0 == tab_index) {
-        $(this).addClass("active");
-        pill_li.addClass("active");
-      } else {
-        // our validator should have prevented this, but remove them just in case
-        $(this).removeClass("active");
-      }
-
-      var pill_a = $("<a>", { "data-toggle" : "pill" } );
+      var pill_a = $("<a>", { "class": "nav-link", "role": "tab", "data-toggle": "pill" } );
+      
       if ($(this)[0].hasAttribute("id")) {
         pill_a.attr("href", "#" + $(this).attr("id"));
       } else {
@@ -48,6 +40,15 @@ $( document ).ready(function() {
         pill_a.append( label.html() );
         // NOTE: Removing the label isn't strictly neccessary, but makes the pills/tabs less redundent
         label.remove();
+      }
+
+      // force the first tab to always be the active tab
+      if (0 == tab_index) {
+        $(this).addClass("active");
+        pill_a.addClass("active");
+      } else {
+        // our validator should have prevented this, but remove them just in case
+        $(this).removeClass("active");
       }
 
       pill_li.append(pill_a);

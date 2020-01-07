@@ -197,12 +197,12 @@ b.button:after
 
 /** === BOOTSTRAP TABS/PILLS === **/
 
-.nav-tabs > li.active > a,
-.nav-tabs > li.active > a:hover,
-.nav-tabs > li.active > a:focus,
-.nav-pills > li.active > a,
-.nav-pills > li.active > a:hover,
-.nav-pills > li.active > a:focus
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-link.active:hover,
+.nav-tabs .nav-link.active:focus,
+.nav-pills .nav-link.active,
+.nav-pills .nav-link.active:hover,
+.nav-pills .nav-link.active:focus
  {
     background-color: #FF833D;
     color: white;
@@ -243,11 +243,11 @@ ul.nav.nav-pills li {
 }
 
 a.list-group-item.active > .badge,
-.nav-pills > .active > a > .badge {
+.nav-pills > .nav-link.active > .badge {
   color: #74ab50;
   background-color: #ffffff;
 }
-.nav-pills > li > a > .badge {
+.nav-pills > .nav-link > .badge {
   margin-left: 3px;
 }
 
