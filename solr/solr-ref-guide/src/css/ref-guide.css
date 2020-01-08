@@ -158,7 +158,11 @@ i.border {
     color: rgba(0,0,0,.85);
 }
 
-/* Special rules for index.html so rows are all the same height */
+.post-content .homepage {
+  margin: 50px 10px 20px 10px;
+}
+
+/* Special rules for homepage (index.html) so rows are all the same height */
 .row.match-my-cols {
     display: table;
 }

@@ -276,18 +276,31 @@ p.lead,
 
 /* Changes styling for Bootstrap "jumbotron" component used on index.html
    Will be inherited by all jumbotron segments used anywhere */
-.jumbotron {
+aside.sidebarblock.jumbotron {
   background-color: #FAFAFA;
   border: solid 2px;
   border-color: #D9411E;
-  padding: 20px;
+  border-radius: 6px;
   margin-top: 20px;
+  padding-left: 60px;
+  padding-right: 60px;
 }
 
-/* Adds a custom "lead" style for use in index.html jumbotron box */
-.lead-homepage {
+.jumbotron p {
+  line-height: 1.4;
+}
+
+/* Default Bootstrap 4 CSS sets padding really high on larger screens;
+   we don't need it */
+@media (min-width: 576px) {
+  .jumbotron {
+    padding: 2rem 1rem;
+  }
+}
+
+/* Custom headline style for use in index.html jumbotron box */
+aside > .lead-homepage {
   font-size: 1.21875em;
-  line-height: 1.3;
   text-align: center;
   font-weight: bold;
 }
