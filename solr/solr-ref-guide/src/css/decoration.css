@@ -288,9 +288,10 @@ aside.sidebarblock.jumbotron {
 
 .jumbotron p {
   line-height: 1.4;
+  font-size: 1.0625rem;
 }
 
-/* Default Bootstrap 4 CSS sets padding really high on larger screens;
+/* Bootstrap 4 CSS sets jumbotron padding really high on larger screens;
    we don't need it */
 @media (min-width: 576px) {
   .jumbotron {
