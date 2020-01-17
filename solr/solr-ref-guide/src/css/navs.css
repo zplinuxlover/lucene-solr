@@ -1,5 +1,6 @@
-/** This CSS covers all navigation elements: sidebar, topnav,
-    bottom scrollnav, footer, and in-page TOCs **/
+/** This CSS covers all navigation: sidebar, topnav,
+    bottom scrollnav, footer, and in-page TOCs.
+    Everything except the footer should be in a <nav> element.  **/
 
 /** === GENERAL NAV ELEMENTS === **/
 
@@ -8,64 +9,14 @@ a.dropdown-toggle,
     margin-left: 10px;
 }
 
-.nav ul.series li {
-    list-style: decimal;
-    font-size:12px;
-}
-
-.nav ul.series li a:hover {
-    background-color: gray;
-}
-.nav ul.series {
-    padding-left: 30px;
-}
-
-.nav ul.series {
-    background-color: #FAFAFA;
-}
-
-.nav > li.active > a {
-    background-color: #262130;
-}
-
-.nav > li > a:hover {
-    background-color: #FF833D;
-}
-
 div.navbar-collapse .dropdown-menu > li > a:hover {
     background-color: #D9411E;
 }
-
-.nav li.thirdlevel > a {
-    background-color: #FAFAFA !important;
-    color: #FF833D;
-    font-weight: bold;
-}
-
-li.dropdownActive a {
-    font-weight: bold;
-}
-
-.nav {
-  margin-bottom: 0;
-  padding-left: 0;
-  list-style: none;
-}
-.nav:before,
-.nav:after {
-  content: " ";
-  /* 1 */
-
-  display: table;
-  /* 2 */
-
-}
-.nav:after {
-  clear: both;
-}
+/** === END GENERAL NAV ELEMENTS === **/
 
 /** === LEFT SIDEBAR === **/
 
+/* The #sidebar ID is used for the sidebar as a whole */
 #sidebar {
     position: sticky;
     top: 0;
@@ -81,17 +32,19 @@ li.dropdownActive a {
   color: #fff;
 }
 
-.sidebar-header h4 {
-  color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
 .sidebar-header a {
   color: #fff;
 }
 
+.sidebarTitle {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.5em;
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
+
+/*The #mysidebar ID is only used for the Ref Guide sections part of the sidebar */
 #mysidebar.nav a {
   color: #fff;
 }
@@ -110,8 +63,6 @@ li.dropdownActive a {
   border: none;
 }
 
-
-
 @media (max-width: 990px) {
     #sidebar {
         position: relative;
@@ -125,23 +76,45 @@ li.dropdownActive a {
     }
 }
 
-/* navgoco sidebar styles (customized) */
-.nav,
-.nav ul,
-.nav li {
-    list-style: none;
+/* These rules cover the individual items in the sidebar */
+
+ul.nav li ul {
+   font-size: 10pt;
 }
 
-.nav ul {
-    padding: 0;
-    /*margin: 0 0 0 18px;*/
-    margin:0;
+.nav {
+  margin-bottom: 0;
+  padding-left: 0;
+  list-style: none;
 }
-
 .nav {
     /* padding: 4px;*/
     padding:0;
     margin: 0;
+}
+
+.nav:before,
+.nav:after {
+  content: " ";
+  /* 1 */
+
+  display: table;
+  /* 2 */
+
+}
+.nav:after {
+  clear: both;
+}
+
+.nav ul {
+    padding: 0;
+    margin: 0;
+}
+
+.nav,
+.nav ul,
+.nav li {
+    list-style: none;
 }
 
 .nav > li {
@@ -152,25 +125,19 @@ li.dropdownActive a {
     margin: 2px 0;
 }
 
+.nav > li.active > a {
+    background-color: #262130;
+}
+
+#mysidebar ul li a:hover {
+    background-color: #8D8D8D;
+}
+
 .nav a {
     color: #333;
     display: block;
     outline: none;
     text-decoration: none;
-}
-
-.nav li > a > span {
-    float: right;
-    font-size: 19px;
-    font-weight: bolder;
-}
-
-
-.nav li > a > span:after {
-    content: '\25be';
-}
-.nav li.open > a > span:after {
-    content: '\25b4';
 }
 
 .nav a:hover,
@@ -180,8 +147,10 @@ li.dropdownActive a {
     color: #f5f5f5;
 }
 
-.nav > li.active > a  {
-background-color: #347DBE;
+.nav ul li a {
+    border-top:1px solid whitesmoke;
+    padding-left:10px;
+    background-color: #FAFAFA;
 }
 
 .nav li a {
@@ -189,23 +158,8 @@ background-color: #347DBE;
     padding: 2px 10px;
 }
 
-.nav li.draft-notice {
-    /* we don't want the draft water mark to make this hard to notice */
-    background-color: rgb(255, 255, 255);
-    padding: 0px 0px 10px 0px;
-
-}
-.nav li.draft-notice a,
-.nav li.draft-notice a:hover,
-.nav li.draft-notice a:active .nav li.draft-notice a:focus {
-    display: inline;
-    color: #2156a5;
-    text-decoration: underline;
-
-    position: inherit;
-    line-height: inherit;
-    padding: inherit;
-    background-color: inherit;
+.nav li a {
+    padding-right:10px;
 }
 
 .nav > li > a {
@@ -213,53 +167,43 @@ background-color: #347DBE;
     padding: 4px 10px;
 }
 
-.nav-pills > li > a {
-  line-height: 30px;
+
+.nav li > a > span {
+    float: right;
+    font-size: 19px;
+    font-weight: bolder;
 }
 
-ul#sidebar {
-    border-radius:0;
+.nav li > a > span:after {
+    content: '\25be';
+}
+.nav li.open > a > span:after {
+    content: '\25b4';
 }
 
-ul.nav li ul {
-   font-size: 10pt;
+.nav > li.active > a  {
+background-color: #347DBE;
 }
-
-.nav ul li a {
-    background-color: #FAFAFA;
-}
-
-.nav li a {
-    padding-right:10px;
-}
-
-.nav li a:hover {
-    background-color: #8D8D8D;
-}
-
-.nav ul li a {
-    border-top:1px solid whitesmoke;
-    padding-left:10px;
-}
-
-.col-lg-12 .nav li a {
-  background-color: white
-}
-
 /* end navgoco sidebar */
 
-div.sidebarTitle {
-    color: #015CAE;
+/* When '-Dsolr-guide-version' is not set during the build, the Guide is
+   considered a Draft and includes a notice in the sidebar to that effect */
+
+.sidebar-header p.draft-notice {
+    padding: 0px 0px 10px 0px;
+
+}
+.sidebar-header p.draft-notice a,
+.sidebar-header p.draft-notice a:hover,
+.sidebar-header p.draft-notice a:active .nav p.draft-notice a:focus {
+    display: inline;
+    text-decoration: underline;
+    position: inherit;
+    line-height: inherit;
+    padding: inherit;
+    background-color: inherit;
 }
 
-li.sidebarTitle {
-    margin-top:40px;
-    font-weight:normal;
-    font-size:120%;
-    color: #262130;
-    margin-bottom:10px;
-    margin-left: 5px;
-}
 
 /* indent extra nav levels
    TODO: is there any easy way to do this that just incrementally applies to anything below sb-level2?
@@ -290,6 +234,9 @@ ul#mysidebar li.current.active > a {
     font-weight: bolder;
 }
 
+/** === END LEFT SIDEBAR === **/
+
+
 /** === TOP NAVBAR === **/
 
 /* The <span> tag with id="projectTitle" is used in the top navbar */
@@ -311,58 +258,7 @@ span.projectTitle
   background-color: white;
 }
 
-.navbar-inverse .navbar-nav > li > a {
-    background-color: transparent;
-    margin-top:10px;
-}
-
-.navbar-inverse .navbar-nav > .active > a,
-.navbar-inverse .navbar-nav > .active > a:hover,
-.navbar-inverse .navbar-nav > .active > a:focus {
-    border-radius:5px;
-}
-
-.navbar-inverse .navbar-nav>.open>a,
-.navbar-inverse .navbar-nav>.open>a:focus,
-.navbar-inverse .navbar-nav>.open>a:hover {
-    border-radius: 5px;
-}
-
-.navbar-inverse {
-    background-color: #D9411E;
-    border-color: #015CAE;
-}
-
-.navbar-inverse .navbar-nav > .open > a,
-.navbar-inverse .navbar-nav > .open > a:hover,
-.navbar-inverse .navbar-nav > .open > a:focus {
-    color: #015CAE;
-}
-
-.navbar-inverse .navbar-nav > .open > a,
-.navbar-inverse .navbar-nav > .open > a:hover,
-.navbar-inverse .navbar-nav > .open > a:focus {
-    background-color: #015CAE;
-    color: #ffffff;
-}
-
-/* not sure if using this ...*/
-.navbar-inverse .navbar-collapse,
-.navbar-inverse .navbar-form {
-    border-color: #248ec2 !important;
-}
-
-.navbar-inverse .navbar-nav > .active > a,
-.navbar-inverse .navbar-nav > .active > a:hover,
-.navbar-inverse .navbar-nav > .active > a:focus {
-    background-color: #D9411E;
-}
-
-@media (max-width: 767px) {
-    .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {
-        color: #444;
-    }
-}
+/** === END TOP NAVBAR === **/
 
 /** === TOCs === **/
 
@@ -397,9 +293,6 @@ nav.toc ul li ul li ul li {
   list-style: square;
 }
 
-nav.toc.section-toc >ul::before {
-    content: "In this section";
-}
 nav.toc >ul::before {
     content: "On this Page";
     font-weight: bold;
@@ -418,16 +311,6 @@ nav.toc >ul::before {
     margin-left: .125em;
 }
 
-.toc ul.sectlevel0 > li > a
-{
-    font-weight: bold;
-}
-
-.toc ul.sectlevel0 ul.sectlevel1
-{
-    margin: .5em 0;
-}
-
 .toc ul
 {
     list-style-type: none;
@@ -439,113 +322,9 @@ nav.toc >ul::before {
     text-decoration: none;
 }
 
-.toc a:active
+.toc a:hover
 {
     text-decoration: underline;
-}
-
-@media only screen
-       and (min-width : 768px)
-{
-    body.toc2
-    {
-        padding-right: 0;
-        padding-left: 15em;
-    }
-
-    #toc.toc2
-    {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1000;
-        overflow: auto;
-        margin-top: 0!important;
-        padding: 1.25em 1em;
-        width: 15em;
-        height: 100%;
-        border-top-width: 0!important;
-        border-right: 1px solid #efefed;
-        border-bottom-width: 0!important;
-        background-color: #f8f8f7;
-    }
-
-    #toc.toc2 > ul
-    {
-        margin-bottom: 0;
-        font-size: .9em;
-    }
-
-    #toc.toc2 ul ul
-    {
-        margin-left: 0;
-        padding-left: 1em;
-    }
-
-    #toc.toc2 ul.sectlevel0 ul.sectlevel1
-    {
-        margin-top: .5em;
-        margin-bottom: .5em;
-        padding-left: 0;
-    }
-
-    body.toc2.toc-right
-    {
-        padding-right: 15em;
-        padding-left: 0;
-    }
-
-    body.toc2.toc-right #toc.toc2
-    {
-        right: 0;
-        left: auto;
-        border-right-width: 0;
-        border-left: 1px solid #efefed;
-    }
-}
-
-@media only screen
-       and (min-width : 1280px)
-{
-    body.toc2
-    {
-        padding-right: 0;
-        padding-left: 20em;
-    }
-
-    #toc.toc2
-    {
-        width: 20em;
-    }
-
-    #toc.toc2 > ul
-    {
-        font-size: .95em;
-    }
-
-    #toc.toc2 ul ul
-    {
-        padding-left: 1.25em;
-    }
-
-    body.toc2.toc-right
-    {
-        padding-right: 20em;
-        padding-left: 0;
-    }
-}
-
-/* CT note 12-31-19: pretty sure we are not using id="toc" so this is unused */
-#content #toc
-{
-    margin-bottom: 1.25em;
-    padding: 1.25em;
-    border-width: 1px;
-    border-style: solid;
-    border-color: #e0e0dc;
-    -webkit-border-radius: 4px;
-            border-radius: 4px;
-    background: #f8f8f7;
 }
 
 #content .toc > :first-child
@@ -558,34 +337,7 @@ nav.toc >ul::before {
     margin-bottom: 0;
 }
 
-/* CT note 12-31-19: pretty sure we are not using id="toc" so this is unused */
-#toc
-{
-    padding-bottom: .5em;
-    border-bottom: 1px solid #efefed;
-}
-
-@media only screen
-       and (min-width : 768px)
-{
-    #toc.toc-right
-    {
-        float: right;
-        margin-left: 1em;
-        border: none;
-        max-width: 300px;
-    }
-    #toc.toc-column
-    {
-      -moz-column-count: 3;
-      -moz-column-gap: 20px;
-      -webkit-column-count: 3;
-      -webkit-column-gap: 20px;
-      column-count: 3;
-      column-gap: 20px;
-      margin-top: 1em;
-    }
-}
+/** === END TOCs === **/
 
 /** === BOTTOM PAGE NAV (scrollnav) === **/
 
@@ -613,6 +365,8 @@ nav.toc >ul::before {
     display: inline-block; /* text-decoration: none doesn't work, but this does */
 }
 
+/** === END BOTTOM PAGE NAV === **/
+
 /** === FOOTER === **/
 footer {
     font-size: smaller;
@@ -622,28 +376,4 @@ footer {
 .footer {
     text-align: right;
 }
-
-#footer
-{
-    margin: 30px 0;
-    padding: 1.25em;
-    max-width: 100%;
-    background-color: none;
-}
-
-#footer-text
-{
-    color: rgba(255,255,255,.8);
-    line-height: 1.44;
-}
-
-
-/* FAQ page */
-#accordion .panel-heading {
-    font-size: 12px;
-}
-
-a.accordion-toggle, a.accordion-collapsed {
-    font-size: 14px;
-    text-decoration: none;
-}
+/** === END FOOTER === **/

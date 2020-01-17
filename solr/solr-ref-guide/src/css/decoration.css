@@ -3,16 +3,7 @@
 
 /** === BUTTONS & FORM ELEMENTS === **/
 
-.btn-info,
-a[data-toggle].btn-info {
-  background-color: #F35B38;
-  font-size: 16px;
-  text-decoration: none;
-  color: #FFFFFF;
-  border: none;
-}
-
-/* Used for nav buttons */
+/* Used for bottom scrollnav buttons */
 .btn-primary {
     color: #F35B38;
     background-color: transparent;
@@ -20,7 +11,7 @@ a[data-toggle].btn-info {
     font-weight: bold;
 }
 
-/* Used for nav buttons */
+/* Used for bottom scrollnav buttons */
 .btn-primary:hover,
 .btn-primary:focus,
 .btn-primary:active,
@@ -37,101 +28,18 @@ a[data-toggle].btn-info {
   border-color: #E6E7E8;
 }
 
-.btn-default {
-    margin-bottom: 10px;
-}
-
-button.btn.btn-default.btn-lg.modalButton1 {
-    margin-left: -20px;
-}
-
-button.cursorNorm {
-    cursor: default;
-}
-
-
-button,
-input,
-select,
-textarea
+input
 {
     margin: 0;
     font-size: 100%;
     font-family: inherit;
-}
-
-button,
-input
-{
     line-height: normal;
 }
 
-button,
-select
-{
-    text-transform: none;
-}
-
-button,
-html input[type='button'],
-input[type='reset'],
-input[type='submit']
-{
-    cursor: pointer;
-
-    -webkit-appearance: button;
-}
-
-button[disabled],
-html input[disabled]
-{
-    cursor: default;
-}
-
-input[type='checkbox'],
-input[type='radio']
-{
-    box-sizing: border-box;
-    padding: 0;
-}
-
-input[type='search']
-{
-    -webkit-box-sizing: content-box;
-       -moz-box-sizing: content-box;
-            box-sizing: content-box;
-
-    -webkit-appearance: textfield;
-}
-
-input[type='search']::-webkit-search-cancel-button,
-input[type='search']::-webkit-search-decoration
-{
-    -webkit-appearance: none;
-}
-
-button::-moz-focus-inner,
 input::-moz-focus-inner
 {
     padding: 0;
     border: 0;
-}
-
-textarea
-{
-    overflow: auto;
-    vertical-align: top;
-}
-
-textarea
-{
-    min-height: 50px;
-    height: auto;
-}
-
-select
-{
-    width: 100%;
 }
 
 .keyseq
@@ -194,6 +102,7 @@ b.button:after
     padding: 0 2px 0 3px;
     content: ']';
 }
+/** === END BUTTONS & FORM ELEMENTS === **/
 
 /** === BOOTSTRAP TABS/PILLS === **/
 
@@ -221,6 +130,10 @@ ul.nav.nav-pills li {
   background-color: #f1f1f1
 }
 
+.nav-pills > li > a {
+  line-height: 30px;
+}
+
 .nav-pills > li + li {
   margin-left: 2px;
 }
@@ -242,6 +155,7 @@ ul.nav.nav-pills li {
   display: block;
 }
 
+/* CT 16 jan 2020: think these are not used */
 a.list-group-item.active > .badge,
 .nav-pills > .nav-link.active > .badge {
   color: #74ab50;
@@ -250,6 +164,8 @@ a.list-group-item.active > .badge,
 .nav-pills > .nav-link > .badge {
   margin-left: 3px;
 }
+
+/** === END BOOTSTRAP TABS/PILLS === **/
 
 /** === LEAD PARAGRAPHS === **/
 
@@ -313,48 +229,19 @@ hr {
     border: 0;
     border-bottom: 1px dashed #ccc;
     background: #999;
-    margin: 30px 0;
-    width: 90%;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-hr
-{
-    -moz-box-sizing: content-box;
-         box-sizing: content-box;
-    height: 0;
-}
-
-hr
-{
-    clear: both;
     margin: 1.25em 0 1.1875em;
+    width: 90%;
     height: 0;
+    clear: both;
     border: solid #ddddd8;
     border-width: 1px 0 0;
+    -moz-box-sizing: content-box;
+         box-sizing: content-box;
 }
+/** === END HORIZONTAL RULES === **/
 
-hr.faded {
-    border: 0;
-    height: 1px;
-    background-image: -webkit-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-    background-image:    -moz-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-    background-image:     -ms-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-    background-image:      -o-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-}
-
-hr.shaded {
-    height: 12px;
-    border: 0;
-    box-shadow: inset 0 6px 6px -6px rgba(0,0,0,0.5);
-    margin-top: 70px;
-    background: white;
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-/** === ANCHORS === **/
+/** === ANCHORJS === **/
+/* This is the permalink icon after section headings */
 
 .anchorjs-link:hover {
     color: #216f9b;
@@ -364,54 +251,4 @@ hr.shaded {
     transition: color .25s linear;
     text-decoration: none;
 }
-
-#content h1 > a.anchor,
-.sidebarblock > .title > a.anchor,
-h2 > a.anchor,
-h3 > a.anchor,
-h4 > a.anchor,
-h5 > a.anchor,
-h6 > a.anchor
-{
-    position: absolute;
-    z-index: 1001;
-    display: block;
-    visibility: hidden;
-    margin-left: -1.5ex;
-    width: 1.5ex;
-    text-align: center;
-    text-decoration: none!important;
-    font-weight: 400;
-}
-
-#content h1 > a.anchor:before,
-.sidebarblock > .title > a.anchor:before,
-h2 > a.anchor:before,
-h3 > a.anchor:before,
-h4 > a.anchor:before,
-h5 > a.anchor:before,
-h6 > a.anchor:before
-{
-    display: block;
-    padding-top: .1em;
-    content: '\00A7';
-    font-size: .85em;
-}
-
-#content h1:hover > a.anchor,
-#content h1 > a.anchor:hover,
-.sidebarblock > .title:hover > a.anchor,
-.sidebarblock > .title > a.anchor:hover,
-h2:hover > a.anchor,
-h2 > a.anchor:hover,
-h3:hover > a.anchor,
-h3 > a.anchor:hover,
-h4:hover > a.anchor,
-h4 > a.anchor:hover,
-h5:hover > a.anchor,
-h5 > a.anchor:hover,
-h6:hover > a.anchor,
-h6 > a.anchor:hover
-{
-    visibility: visible;
-}
+/** === END ANCHORJS === **/

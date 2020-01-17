@@ -1,6 +1,6 @@
 {% assign sidebar = site.data.sidebar %}
 <div class="sidebar-header">
-  <h4 class="text-center">{{sidebar.title}}</h4>
+  <div class="sidebarTitle text-center">{{sidebar.title}}</div>
   {% if "" != site.solr-attributes.solr-guide-draft-status %}
   <p class="draft-notice">
     This is an unofficial DRAFT of the Guide for {{ site.solr-attributes.solr-docs-version }}.
