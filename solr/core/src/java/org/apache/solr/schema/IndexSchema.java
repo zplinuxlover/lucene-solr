@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -61,9 +62,11 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.pkg.PackageAwareSolrClassLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -92,7 +95,7 @@ import static java.util.Collections.singletonMap;
  *
  *
  */
-public class IndexSchema {
+public class IndexSchema implements Closeable {
   public static final String COPY_FIELD = "copyField";
   public static final String COPY_FIELDS = COPY_FIELD + "s";
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
@@ -133,7 +136,15 @@ public class IndexSchema {
   protected String name;
   protected final Version luceneVersion;
   protected float version;
+  /**All resources and other files should be loaded using this
+   */
   protected final SolrResourceLoader loader;
+
+  /** Classes for all plugins should be loaded using this.
+   * If resources need to be loaded from packages, use the classloader of one of the classes
+   * loaded from this package
+   */
+  protected final SolrClassLoader classLoader;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
   protected Map<String,FieldType> fieldTypes = new HashMap<>();
@@ -164,15 +175,18 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
+  private String configSet;
+
   /**
    * Constructs a schema using the specified resource name and stream.
    * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader) {
+  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrClassLoader resourceLoader, String configSet) {
     this(luceneVersion, resourceLoader);
 
+    this.configSet = configSet;
     this.resourceName = Objects.requireNonNull(name);
     try {
       readSchema(is);
@@ -182,9 +196,16 @@ public class IndexSchema {
     }
   }
 
-  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
+  public SolrClassLoader getSolrClassLoader(){
+    return classLoader;
+  }
+  protected IndexSchema(Version luceneVersion, SolrClassLoader loader) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
-    this.loader = loader;
+    this.classLoader = loader;
+    this.loader = loader instanceof PackageAwareSolrClassLoader ?
+        ((PackageAwareSolrClassLoader) loader).getResourceLoader() :
+        (SolrResourceLoader) loader;
+
   }
 
   /**
@@ -499,7 +520,7 @@ public class IndexSchema {
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
       expression = getFieldTypeXPathExpressions();
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      typeLoader.load(loader, nodes);
+      typeLoader.load(classLoader, nodes);
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
@@ -510,7 +531,7 @@ public class IndexSchema {
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
         // use the loader to ensure proper SolrCoreAware handling
-        similarityFactory = loader.newInstance(simClass.getName(), SimilarityFactory.class);
+        similarityFactory = classLoader.newInstance(simClass.getName(), SimilarityFactory.class);
         similarityFactory.init(new ModifiableSolrParams());
       } else {
         isExplicitSimilarity = true;
@@ -984,7 +1005,7 @@ public class IndexSchema {
     dynamicCopyFields = temp;
   }
 
-  static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {
+  static SimilarityFactory readSimilarity(SolrClassLoader loader, Node node) {
     if (node==null) {
       return null;
     } else {
@@ -1994,4 +2015,20 @@ public class IndexSchema {
     return decoders.computeIfAbsent(ft, f -> PayloadUtils.getPayloadDecoder(ft));
   }
 
+  boolean isClosed = false;
+  @Override
+  public void close() throws IOException {
+    synchronized (this){
+      if(isClosed) return;
+      if (classLoader instanceof PackageAwareSolrClassLoader) {
+        ((PackageAwareSolrClassLoader) classLoader).close();
+      }
+      isClosed = true;
+
+    }
+  }
+
+  public String getConfigSet(){
+    return configSet;
+  }
 }

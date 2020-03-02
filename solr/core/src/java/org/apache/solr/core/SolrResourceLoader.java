@@ -20,7 +20,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -83,7 +82,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable {
+public class SolrResourceLoader implements SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String project = "solr";
@@ -118,6 +117,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   // (such as the SolrZkClient) when XML docs are being parsed.    
   private RestManager.Registry managedResourceRegistry;
 
+  //package private , only to be used from SolrCore
+  SolrCore core;
+
   public synchronized RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
       managedResourceRegistry = new RestManager.Registry();
@@ -146,6 +148,15 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     for (Path path : classpath) {
       addToClassLoader(path.toUri().normalize().toURL());
     }
+
+  }
+
+  /**
+   * This could be null if it is not associated with a core yet
+   *
+   */
+  public SolrCore getCore() {
+    return core;
 
   }
 
@@ -178,6 +189,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     }
     this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
 
+    initSPI();
+    this.coreProperties = coreProperties;
+  }
+
+  protected void initSPI() {
     /*
      * Skip the lib subdirectory when we are loading from the solr home.
      * Otherwise load it, so core lib directories still get loaded.
@@ -195,7 +211,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         reloadLuceneSPI();
       }
     }
-    this.coreProperties = coreProperties;
   }
 
   /**
@@ -615,6 +630,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Class[] NO_CLASSES = new Class[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
@@ -682,6 +698,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
           "Error instantiating class: '" + clazz.getName() + "'", e);
     }
 
+    registerForCallbacks(obj);
+
+    return obj;
+  }
+
+  protected <T> void registerForCallbacks(T obj) {
     if (!live) {
       if (obj instanceof SolrCoreAware) {
         assertAwareCompatibility(SolrCoreAware.class, obj);
@@ -696,8 +718,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         infoMBeans.add((SolrInfoBean) obj);
       }
     }
-
-    return obj;
   }
 
 
@@ -724,6 +744,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     // this is the last method to be called in SolrCore before the latch is released.
     live = true;
+  }
+
+  public void registerSolrCoreAware(SolrCoreAware obj) {
+    assertAwareCompatibility(SolrCoreAware.class, obj);
+    if (live) {
+      //this core is already live
+      if (this.core != null) {
+        obj.inform(this.core);
+      }
+    } else {
+      waitingForCore.add(obj);
+    }
   }
 
   /**
@@ -908,7 +940,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  static void assertAwareCompatibility(Class aware, Object obj) {
+  public static void assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

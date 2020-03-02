@@ -17,6 +17,8 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
@@ -28,7 +30,9 @@ import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageListeners;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -39,12 +43,17 @@ import org.slf4j.LoggerFactory;
  */
 public class CloudConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  private final ZkController zkController;
+  private ZkController zkController;
+
+  private final PackageListeners packageListeners = new PackageListeners(null);
 
   public CloudConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
     super(loader, shareSchema);
     this.zkController = zkController;
+  }
+
+  public PackageListeners getPackageListeners(){
+    return packageListeners;
   }
 
   @Override
@@ -79,6 +88,10 @@ public class CloudConfigSetService extends ConfigSetService {
         cd.getSubstitutableProperties(), zkController);
   }
 
+  public ZkController getZkController(){
+    return zkController;
+  }
+
   @Override
   protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
     try {
@@ -111,5 +124,27 @@ public class CloudConfigSetService extends ConfigSetService {
   @Override
   public String configSetName(CoreDescriptor cd) {
     return "configset " + cd.getConfigSet();
+  }
+
+  public void refreshAllSchema(String confset) {
+    if (schemaCache != null) {
+      Set<String> stale = new HashSet<>();
+      schemaCache.asMap()
+          .forEach((key, schema) -> {
+            if (confset.equals(schema.getConfigSet())) {
+              stale.add(key);
+            }
+          });
+
+      schemaCache.invalidateAll(stale);
+    }
+
+    if (zkController != null) {
+      for (SolrCore core : zkController.getCoreContainer().getCores()) {
+        if (confset.equals(core.getSolrConfig().getConfigsetName())) {
+          core.refreshSchema();
+        }
+      }
+    }
   }
 }

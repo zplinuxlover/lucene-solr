@@ -20,9 +20,12 @@ package org.apache.solr.pkg;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -40,9 +43,9 @@ public class PackageListeners {
     this.core = core;
   }
 
-  // this registry only keeps a weak reference because it does not want to
+  // this registry only keeps a soft reference because it does not want to
   // cause a memory leak if the listener forgets to unregister itself
-  private List<Reference<Listener>> listeners = new ArrayList<>();
+  private final List<Reference<Listener>> listeners = new CopyOnWriteArrayList<>();
 
   public synchronized void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));
@@ -59,7 +62,6 @@ public class PackageListeners {
       }
 
     }
-
   }
 
   synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
@@ -74,38 +76,64 @@ public class PackageListeners {
     }
   }
 
-  private synchronized void invokeListeners(PackageLoader.Package pkg) {
-    for (Reference<Listener> ref : listeners) {
-      Listener listener = ref.get();
-      if(listener == null) continue;
-      if (listener.packageName() == null || listener.packageName().equals(pkg.name())) {
-        listener.changed(pkg);
+  private void invokeListeners(PackageLoader.Package pkg) {
+    Ctx ctx = new Ctx();
+    try {
+      forEachListener(listener -> {
+        if (listener.packageName() == null ||
+            listener.packageName().equals(pkg.name())) {
+          listener.changed(pkg, ctx);
+        }
+      });
+    } finally {
+      if(ctx.postProcessors != null){
+        for (Runnable value : ctx.postProcessors.values()) {
+          value.run();
+        }
       }
     }
   }
 
-  public List<Listener> getListeners() {
-    List<Listener> result = new ArrayList<>();
+  public synchronized void forEachListener(Consumer<Listener> listenerConsumer) {
     for (Reference<Listener> ref : listeners) {
       Listener l = ref.get();
       if (l != null) {
-        result.add(l);
+        listenerConsumer.accept(l);
       }
     }
-    return result;
   }
 
 
+  public class Ctx {
+    private Map<String, Runnable > postProcessors;
+
+    /**A post processor will be run after all the listeners are invoked. This is particularly helpful
+     * if a group of plugins need to be reloaded all at once.  The case in point is schema plugins.
+     * If there are multiple plugins loade from packages in a schema, we would like to reload it only once
+     *
+     */
+    public void addPostProcessor(String name, Runnable runnable){
+      if(postProcessors == null) postProcessors = new HashMap<>();
+      postProcessors.put(name, runnable);
+    }
+
+    public Runnable getPostProcessor(String name){
+      if(postProcessors == null) return null;
+      return postProcessors.get(name);
+    }
+
+
+  }
   public interface Listener {
-    /**Name of the package or null to loisten to all package changes
+    /**Name of the package or null to listen to all package changes
      */
     String packageName();
 
     PluginInfo pluginInfo();
 
-    void changed(PackageLoader.Package pkg);
+    void changed(PackageLoader.Package pkg, Ctx ctx);
 
-    PackageLoader.Package.Version getPackageVersion();
+    PackageAPI.PkgVersion  getPackageVersion();
 
   }
 }

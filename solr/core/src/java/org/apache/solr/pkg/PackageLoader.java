@@ -34,9 +34,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -241,7 +243,7 @@ public class PackageLoader implements Closeable {
 
     public class Version implements MapWriter, Closeable {
       private final Package parent;
-      private SolrResourceLoader loader;
+      private SolrClassLoader loader;
 
       private final PackageAPI.PkgVersion version;
 
@@ -249,6 +251,10 @@ public class PackageLoader implements Closeable {
       public void writeMap(EntryWriter ew) throws IOException {
         ew.put("package", parent.name());
         version.writeMap(ew);
+      }
+
+      public PackageAPI.PkgVersion getVersionInfo(){
+        return version;
       }
 
       Version(Package parent, PackageAPI.PkgVersion v) {
@@ -270,7 +276,25 @@ public class PackageLoader implements Closeable {
               "PACKAGE_LOADER: " + parent.name() + ":" + version,
               paths,
               coreContainer.getResourceLoader().getInstancePath(),
-              coreContainer.getResourceLoader().getClassLoader());
+              coreContainer.getResourceLoader().getClassLoader()){
+            @Override
+            protected void initSPI() {
+              //no op
+            }
+
+            @Override
+            protected <T> void registerForCallbacks(T obj) {
+              if (obj instanceof ResourceLoaderAware) {
+                assertAwareCompatibility(ResourceLoaderAware.class, obj);
+                try {
+                  ((ResourceLoaderAware) obj).inform(this);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+
+              }
+            }
+          };
         } catch (MalformedURLException e) {
           log.error("Could not load classloader ", e);
         }
@@ -284,7 +308,7 @@ public class PackageLoader implements Closeable {
         return Collections.unmodifiableList(version.files);
       }
 
-      public SolrResourceLoader getLoader() {
+      public SolrClassLoader getLoader() {
         return loader;
       }
 

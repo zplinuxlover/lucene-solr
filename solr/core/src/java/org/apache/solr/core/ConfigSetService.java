@@ -35,6 +35,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
  * creation.
@@ -42,7 +43,6 @@ import org.slf4j.LoggerFactory;
 public abstract class ConfigSetService {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
     if (zkController == null) {
       return new Standalone(loader, nodeConfig.hasSchemaCache(), nodeConfig.getConfigSetBaseDirectory());
@@ -54,7 +54,7 @@ public abstract class ConfigSetService {
   protected final SolrResourceLoader parentLoader;
 
   /** Optional cache of schemas, key'ed by a bunch of concatenated things */
-  private final Cache<String, IndexSchema> schemaCache;
+  protected final Cache<String, IndexSchema> schemaCache;
 
   /**
    * Load the ConfigSet for a core
@@ -80,8 +80,8 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
+      String name = configSetName(dcore);
+      return new ConfigSet(name, solrConfig, () -> createIndexSchema(dcore, solrConfig), properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -108,7 +108,7 @@ public abstract class ConfigSetService {
    * @return a SolrConfig object
    */
   protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) {
-    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted);
+    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted, this, cd.getConfigName());
   }
 
   /**

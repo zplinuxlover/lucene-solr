@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core;
 
+import java.util.function.Supplier;
+
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 
@@ -30,17 +32,17 @@ public class ConfigSet {
 
   private final SolrConfig solrconfig;
 
-  private final IndexSchema indexSchema;
+  private final Supplier<IndexSchema> indexSchemaSupplier;
 
   private final NamedList properties;
 
   private final boolean trusted;
 
-  public ConfigSet(String name, SolrConfig solrConfig, IndexSchema indexSchema,
+  public ConfigSet(String name, SolrConfig solrConfig, Supplier<IndexSchema> indexSchema,
       NamedList properties, boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
-    this.indexSchema = indexSchema;
+    this.indexSchemaSupplier = indexSchema;
     this.properties = properties;
     this.trusted = trusted;
   }
@@ -54,7 +56,7 @@ public class ConfigSet {
   }
 
   public IndexSchema getIndexSchema() {
-    return indexSchema;
+    return indexSchemaSupplier.get();
   }
 
   public NamedList getProperties() {

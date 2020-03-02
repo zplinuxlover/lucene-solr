@@ -102,7 +102,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
   ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable, 
                      String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
-    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader());
+    super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getConfigsetName());
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
@@ -1276,7 +1276,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     Map<String,FieldType> newFieldTypes = new HashMap<>();
     List<SchemaAware> schemaAwareList = new ArrayList<>();
     FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, newFieldTypes, schemaAwareList);
-    typeLoader.loadSingle(loader, FieldTypeXmlAdapter.toNode(options));
+    typeLoader.loadSingle(classLoader, FieldTypeXmlAdapter.toNode(options));
     FieldType ft = newFieldTypes.get(typeName);
     if (!schemaAwareList.isEmpty())
       schemaAware.addAll(schemaAwareList);

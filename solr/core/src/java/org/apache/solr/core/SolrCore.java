@@ -62,7 +62,6 @@ import com.codahale.metrics.Timer;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -173,6 +172,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -238,6 +238,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
+  private ConfigSet configSet;
 
   private PackageListeners packageListeners = new PackageListeners(this);
 
@@ -285,7 +286,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   /** Gets the SolrResourceLoader for a given package
    * @param pkg The package name
    */
-  public SolrResourceLoader getResourceLoader(String pkg) {
+  public SolrClassLoader getSolrClassLoader(String pkg) {
     if (pkg == null) {
       return resourceLoader;
     }
@@ -816,7 +817,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * @return the desired instance
    * @throws SolrException if the object could not be instantiated
    */
-  public static <T> T createInstance(String className, Class<T> cast, String msg, SolrCore core, ResourceLoader resourceLoader) {
+  public static <T> T createInstance(String className, Class<T> cast, String msg, SolrCore core, SolrClassLoader resourceLoader) {
     Class<? extends T> clazz = null;
     if (msg == null) msg = "SolrCore Object";
     try {
@@ -876,7 +877,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
-    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader(info.pkgName));
+    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getSolrClassLoader(info.pkgName));
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
@@ -899,12 +900,23 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet coreConfig) {
     this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
         cd, null, null, null, false);
+    this.configSet = coreConfig;
   }
 
   public CoreContainer getCoreContainer() {
     return coreContainer;
   }
 
+  public void refreshSchema() {
+    if(configSet == null){
+      log.error("Cannot reload schema. configSet is null");
+      return;
+    }
+    log.info("Reloading schema...");
+    IndexSchema old = schema;
+    schema = configSet.getIndexSchema();
+    if(old != schema) closeWhileHandlingException(old);
+  }
 
   /**
    * Creates a new core and register it in the list of cores. If a core with the
@@ -912,7 +924,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    *
    * @param dataDir the index directory
    * @param config  a solr config instance
-   * @param schema  a solr schema instance
+   * @param schema a solr schema {@link IndexSchema}
    * @since solr 1.3
    */
   public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
@@ -935,6 +947,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       MDCLoggingContext.setCore(this);
 
       resourceLoader = config.getResourceLoader();
+      resourceLoader.core = this;
       this.solrConfig = config;
       this.configSetProperties = configSetProperties;
       // Initialize the metrics manager
@@ -959,6 +972,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
           this.dataDir);
 
+      this.schema = schema;
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
       // initialize core metrics
@@ -1556,6 +1570,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     log.info("{} CLOSING SolrCore {}", logid, this);
 
     ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
+    closeWhileHandlingException(schema);
 
     // stop reporting metrics
     try {

@@ -24,6 +24,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,36 +57,54 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
 
       @Override
-      public void changed(PackageLoader.Package pkg) {
+      public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
         reload(pkg);
 
       }
 
       @Override
-      public PackageLoader.Package.Version getPackageVersion() {
-        return pkgVersion;
+      public PackageAPI.PkgVersion getPackageVersion() {
+        return pkgVersion.getVersionInfo();
       }
 
     });
   }
 
-  private String maxVersion() {
-    RequestParams.ParamSet p = core.getSolrConfig().getRequestParams().getParams(PackageListeners.PACKAGE_VERSIONS);
+  private static String maxAllowedVersion(RequestParams requestParams, String pkgName) {
+    RequestParams.ParamSet p = requestParams.getParams(PackageListeners.PACKAGE_VERSIONS);
     if (p == null) {
       return null;
     }
-    Object o = p.get().get(info.pkgName);
+    Object o = p.get().get(pkgName);
     if (o == null || LATEST.equals(o)) return null;
     return o.toString();
   }
 
 
   private synchronized void reload(PackageLoader.Package pkg) {
-    String lessThan = maxVersion();
+    PackageLoader.Package.Version rightVersion = getRightVersion(pkg, core.getSolrConfig().getRequestParams());
+    if (pkgVersion != null) {
+      if (rightVersion == pkgVersion) {
+        //I'm already using the latest classloader in the package. nothing to do
+        return ;
+      }
+    }
+    if (rightVersion == null) return;
+
+    log.info("loading plugin: {} -> {} using  package {}:{}",
+        pluginInfo.type, pluginInfo.name, pkg.name(), rightVersion.getVersion());
+
+    initNewInstance(rightVersion);
+    pkgVersion = rightVersion;
+
+  }
+
+  public static PackageLoader.Package.Version getRightVersion(PackageLoader.Package pkg, RequestParams requestParams) {
+    String lessThan = maxAllowedVersion(requestParams, pkg.name);
     PackageLoader.Package.Version newest = pkg.getLatest(lessThan);
     if (newest == null) {
       log.error("No latest version available for package : {}", pkg.name());
-      return;
+      return null;
     }
     if (lessThan != null) {
       PackageLoader.Package.Version pkgLatest = pkg.getLatest();
@@ -94,25 +113,17 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
     }
 
-    if (pkgVersion != null) {
-      if (newest == pkgVersion) {
-        //I'm already using the latest classloder in the package. nothing to do
-        return;
-      }
-    }
 
-    log.info("loading plugin: {} -> {} using  package {}:{}",
-        pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
-
-    initNewInstance(newest);
-    pkgVersion = newest;
-
+    return newest;
   }
 
   protected void initNewInstance(PackageLoader.Package.Version newest) {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
+    if (instance instanceof SolrCoreAware) {
+      core.getResourceLoader().registerSolrCoreAware((SolrCoreAware) instance);
+    }
     T old = inst;
     inst = (T) instance;
     if (old instanceof AutoCloseable) {
