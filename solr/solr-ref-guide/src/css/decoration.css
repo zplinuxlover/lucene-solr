@@ -5,7 +5,7 @@
 
 /* Used for bottom scrollnav buttons */
 .btn-primary {
-    color: #F35B38;
+    color: #D9411E;
     background-color: transparent;
     border-color: #CDCECF;
     font-weight: bold;
@@ -17,8 +17,8 @@
 .btn-primary:active,
 .btn-primary.active,
 .open .dropdown-toggle.btn-primary {
-    background-color: #305CB3;
-    border-color: #E6E7E8;
+    background-color: #D9411E;
+    border-color: #CDCECF;
 }
 
 /* used for Download Solr button on docs home page */

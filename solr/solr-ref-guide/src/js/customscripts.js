@@ -18,7 +18,7 @@ $( document ).ready(function() {
     $(".tab-pane", this).each(function(tab_index) {
       var pill_li = $("<li>", { "class": "nav-item" });
       var pill_a = $("<a>", { "class": "nav-link", "role": "tab", "data-toggle": "pill" } );
-      
+
       if ($(this)[0].hasAttribute("id")) {
         pill_a.attr("href", "#" + $(this).attr("id"));
       } else {
@@ -59,6 +59,7 @@ $( document ).ready(function() {
 
 });
 
+// Adds scrollbar for the sidebar nav
 $(document).ready(function () {
 
     $("#sidebar").mCustomScrollbar({

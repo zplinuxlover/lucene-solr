@@ -35,4 +35,9 @@ ul#results-container a:focus {
     float: right;
 }
 
+/*Pad the bottom of the results container to give a little more space to the nav*/
+ul#results-container {
+  padding-bottom: 30px;
+}
+
 /* end search */
