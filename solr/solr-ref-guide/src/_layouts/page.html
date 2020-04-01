@@ -2,20 +2,25 @@
 layout: default
 ---
 
-{% comment %}NOTE: page_id is also definied in default.html{% endcomment %}
+{% comment %}NOTE: page_id is also defined in default.html{% endcomment %}
 {% assign page_id = page.url | split: '/' | last | remove: '.html' %}
 <header class="header">
    <h1 class="title-main">{{ page.title }}</h1>
 </header>
 
 <div class="container-fluid">
+
+<!-- This makes the automatic TOC generation conditional.
+     Add ":page-show-toc: false" to front-matter to disable auto-TOC. -->
+  {% if page.show-toc != false %}
   <nav class="toc float-right justify-content-end">
-  {{page.document | tocify_asciidoc }}
-</nav>
+    {{ page.document | tocify_asciidoc }}
+  </nav>
+  {% endif %}
+
   <section class="content">
      {{ content }}
   </section>
-
 
 
 <!-- Adds tags, if any -->

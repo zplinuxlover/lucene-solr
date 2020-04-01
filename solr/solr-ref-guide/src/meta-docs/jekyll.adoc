@@ -1,4 +1,4 @@
-= Making Changes to HTML Version
+= Making Changes to Jekyll
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -45,7 +45,7 @@ Front matter for Jekyll is similar to a header that defines the title of the pag
 
 Every document that will be converted to HTML *must* include at least the page title at the top of the page. Page titles are defined with a single equal sign (`=`) followed by the title that will appear at the top of the page (such as `= Topic of the Page`).
 
-Many guides to Jekyll also say that defining the layout in the front matter is required. However, since we only use one layout for all pages, we have defined this as a default.
+Many guides to Jekyll also say that defining the `layout` in the front matter is required. However, since we only use one layout for all pages, we have defined this as a default.
 
 The Solr Ref Guide uses the front matter to define some custom attributes on a per page basis:
 
@@ -58,19 +58,12 @@ The format for adding any parameter to the front matter is to use colons on both
 ==== Table of Contents
 There are some optional custom attributes that can be defined in pages to affect the Table of Contents presentation in Jekyll:
 
-`page-toclevels`::
-Changes how "deep" the TOC will be in terms of nested section/sub-section titles (default = `2`).
-`page-tocclass`::
-Changes the CSS class applied to the TOC. The options are:
-* `normal`, the default, resulting in the class name `toc-normal` being used in the HTML.
-* `right`, to put the TOC on the right side of the page.
-* `column`, to make a very long TOC span 3 columns at the top of the page.
-`page-toc`::
-If this is `false`, then no TOCs will be generated for the page at all. The default is `true`, so can usually be left undefined.
-`\{section-toc}`::
-A special macro that can be used anywhere in a page to create an "In this Section" TOC covering only the sub-headings in the same section.
-+
-NOTE: Setting `:page-toc: false` will prevent the `section-toc` macro from working, so if you want no "top level" TOC, but you do want section TOCs, use `:page-toclevels: 0`.
+`toclevels`::
+Changes how "deep" the TOC will be in terms of nested section/sub-section titles (default = `2`). Example: `:toclevels: 1`.
+
+`page-show-toc`::
+If this is `false`, then no TOCs will be generated for the page at all. The default is `true`, so can usually be left undefined. Example `:page-show-toc: false`.
+
 
 === Layouts
 
@@ -78,19 +71,28 @@ Layouts define the "look and feel" of each page. Jekyll uses https://shopify.git
 
 For our implementation of Jekyll, layouts are found in `solr-ref-guide/src/_layouts`.
 
-We currently use only the `_layouts/default.html` layout for overall page structure, and `_layouts/page.html` for the page-level content. The `page.html` layout is inserted into the `default.html` layout.
+We currently use the `_layouts/default.html` layout for overall page structure, for almost all pages and `_layouts/page.html` for the page-level content.
+The `page.html` layout is inserted into the `default.html` layout.
+
+The main page (`index.html`) of the Ref Guide uses the `_layouts/home.html` layout.
+It also still uses `_layouts/page.html` for the page-level content.
+This is done because `index.html` has some special formatting and rules for how to define the page.
 
 === Includes
 
-Include files are (usually) small files that are pulled into a layout when a page is being built. They are Liquid templates that define an area of the page. This allows flexibility across layouts - all pages can have the same header without duplicating code, but different pages could have different menu options.
+Include files are (usually) small HTML files that are pulled into a layout when a page is being built.
+ They are Liquid templates that define an area of the page.
+ This allows flexibility across layouts - all pages can have the same header without duplicating code, but different pages could have different menu options.
 
-Include files that we use define the top navigation, the page header, the page footer, and tables of contents.
+Include files that we use define the top navigation, the page header, and the page footer.
 
 For our implementation of Jekyll, include files are found in `solr-ref-guide/src/_includes`.
 
 === Data Files
 
-Data files include data such as lists that should be included in each page. The left-hand navigation menu is an example of a data file. However, in our build, the navigation is built from the `page-children` hierarchies.
+Data files include data such as lists that should be included in each page.
+The left-hand navigation menu is an example of a data file.
+However, in our build, the navigation is built from the `page-children` hierarchies defined on parent pages.
 
 For our implementation of Jekyll, data files are found in `solr-ref-guide/src/_data`.
 

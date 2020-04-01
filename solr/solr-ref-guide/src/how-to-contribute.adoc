@@ -1,6 +1,5 @@
 = How to Contribute to Solr Documentation
-:page-tocclass: right
-:page-toclevels: 3
+:toclevels: 2
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -31,7 +30,7 @@ include::meta-docs/asciidoc-syntax.adoc[leveloffset=+2]
 
 include::meta-docs/editing-tools.adoc[leveloffset=+2]
 
-== Modifying the Publication Formats
+== Modifying the HTML Templates
 The Solr Reference Guide is published in HTML format, using Jekyll and some plugins.
 
 include::meta-docs/jekyll.adoc[leveloffset=+2]

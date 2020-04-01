@@ -1,5 +1,4 @@
 = Major Changes in Solr 9
-:page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -90,7 +89,7 @@ _(raw; not yet edited)_
   This embedded zookeeper should not be used in production. If you rely
   upon the previous behavior, then you can change the clientPortAddress
   in solr/server/solr/zoo.cfg (Robert Muir)
-  
+
 === Upgrade Prerequisites in Solr 9
 
 === Rolling Upgrades with Solr 9
