@@ -60,7 +60,7 @@ svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/build/solr-ref-gu
 Confirm you can browse to Guide manually by going to the new URL. For example:
 https://lucene.apache.org/solr/guide/7_7
 
-== Publish the Guide
+== Publish the Final Guide
 
 There are two steps to publishing the Guide: first, uploading the DRAFT pages with the production-ready version; and second, updating links to point to the new Guide.
 
