@@ -297,6 +297,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   }
   
   @Test
+  // impossible to complete due to the slowness of policy calculations
+  @AwaitsFix( bugUrl = "https://issues.apache.org/jira/browse/SOLR-14275")
   public void testAddNode() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     assertAutoScalingRequest
