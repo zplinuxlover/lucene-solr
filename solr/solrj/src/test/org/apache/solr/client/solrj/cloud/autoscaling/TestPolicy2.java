@@ -430,8 +430,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"));
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(autoScalingConfig, cloudManagerFromDiagnostics);
 
-    // nocommit 3->2
-    assertEquals(2, suggestions.size());
+    assertEquals(3, suggestions.size());
 
     for (Suggester.SuggestionInfo suggestion : suggestions) {
       assertEquals("improvement", suggestion._get("type", null));

@@ -300,7 +300,7 @@ public class Assign {
     // do custom preferences exist
     if (!autoScalingConfig.getPolicy().hasEmptyPreferences()) return true;
     // does a cluster policy exist
-    if (!autoScalingConfig.getPolicy().hasEmptyClusterPolicy()) return true;
+    if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
     // finally we check if the current collection has a policy
     return !collection.isPresent() || collection.get().getPolicyName() != null;
   }

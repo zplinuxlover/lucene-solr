@@ -67,10 +67,7 @@ public class Suggestion {
     }
 
     public boolean hasTimedOut() {
-      //nocommit
-      return false;
-      //return session.cloudManager.getTimeSource().getTimeNs() >= endTime;
-
+      return session.cloudManager.getTimeSource().getTimeNs() >= endTime;
     }
 
     public boolean needMore() {
