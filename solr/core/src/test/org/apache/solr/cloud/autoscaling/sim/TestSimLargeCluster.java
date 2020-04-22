@@ -100,6 +100,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     // disable metrics history collection
     cluster.disableMetricsHistory();
 
+    // turn off the default policy to avoid slowdowns due to the costly #EQUAL rules
+    CloudTestUtils.assertAutoScalingRequest(cluster, "{'set-cluster-policy': []}");
     // disable .scheduled_maintenance (once it exists)
     CloudTestUtils.waitForTriggerToBeScheduled(cluster, ".scheduled_maintenance");
     CloudTestUtils.suspendTrigger(cluster, ".scheduled_maintenance");

@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -331,11 +332,13 @@ public class Policy implements MapWriter {
               PolicyHelper.writeNodes(ew, matrixCopy);
               ew.put("config", matrix.get(0).session.getPolicy());
             });
-            log.error("Exception! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}",
+            StringWriter exc = new StringWriter();
+            e.printStackTrace(new PrintWriter(exc));
+            log.error("Exception during matrix sorting! prefs = {}, recent r1 = {}, r2 = {}, matrix = {}, exception={}",
                 clusterPreferences,
                 lastComparison[0].node,
                 lastComparison[1].node,
-                Utils.writeJson(m, new StringWriter(), true).toString());
+                Utils.writeJson(m, new StringWriter(), true).toString(), exc.toString());
           } catch (IOException e1) {
             //
           }
