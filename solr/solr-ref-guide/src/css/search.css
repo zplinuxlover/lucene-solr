@@ -19,11 +19,14 @@
 ul#results-container a {
     background-color: transparent;
     color: #2156a5;
+    text-indent: -6px;
+    padding-left: 8px;
+    display: block;
 }
 
 ul#results-container a:hover,
 ul#results-container a:focus {
-    background-color: #FF833D;
+    background-color: #D9411E;
     color: white;
 }
 
@@ -35,9 +38,10 @@ ul#results-container a:focus {
     float: right;
 }
 
-/*Pad the bottom of the results container to give a little more space to the nav*/
+/*Pad the left and bottom of the results container to give a little more space to the nav*/
 ul#results-container {
   padding-bottom: 30px;
+  padding-left: 2px;
 }
 
 /* end search */
