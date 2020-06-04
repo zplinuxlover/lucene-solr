@@ -18,9 +18,7 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.math3.stat.inference.GTest;
 import org.apache.solr.client.solrj.io.Tuple;
