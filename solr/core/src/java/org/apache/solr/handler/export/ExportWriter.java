@@ -392,7 +392,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       streamContext = new StreamContext();
       streamContext.setRequestParams(params);
-      // nocommit enforce this?
       streamContext.setLocal(true);
 
       streamContext.workerID = 0;
@@ -515,17 +514,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         int outDocsIndex = fillOutDocs(leaves, sortDoc, queue, outDocs);
         count += (outDocsIndex + 1);
         addDocsToItemWriter(leaves, writer, outDocs, outDocsIndex);
-      }
-    }
-    // nocommit clean it up
-    if (sortDoc != null) {
-      for (SortValue sv : sortDoc.getSortValues()) {
-        if (sv instanceof StringValue) {
-          StringValue stringValue = (StringValue) sv;
-          log.info(" - " + stringValue.field + ": cacheHit=" + stringValue.cacheHit +
-              ", cacheMiss=" + stringValue.cacheMiss + ", cacheEvict=" + stringValue.cacheEvict +
-              ", cacheClear=" + stringValue.cacheClear);
-        }
       }
     }
   }

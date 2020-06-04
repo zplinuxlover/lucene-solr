@@ -253,7 +253,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       Tuple tuple = this.tupleStream.read();
       if(tuple.EOF) {
         long totalTime = (System.nanoTime() - begin) / 1000000;
-        tuple.fields.put(StreamParams.RESPONSE_TIME, totalTime);
+        tuple.put(StreamParams.RESPONSE_TIME, totalTime);
       }
       return tuple;
     }

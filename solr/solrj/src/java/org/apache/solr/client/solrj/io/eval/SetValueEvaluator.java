@@ -45,7 +45,7 @@ public class SetValueEvaluator extends RecursiveObjectEvaluator implements ManyV
         value = ((String)value).replace("\"", "");
       }
       key = key.replace("\"", "");
-      Tuple newTuple = new Tuple(tuple.fields);
+      Tuple newTuple = tuple.clone();
       newTuple.put(key, value);
       return newTuple;
     } else {

@@ -90,7 +90,7 @@ public class GetStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     if (tupleIterator.hasNext()) {
       Tuple t = tupleIterator.next();
-      return new Tuple(t.fields);
+      return t.clone();
     } else {
       return Tuple.EOF();
     }

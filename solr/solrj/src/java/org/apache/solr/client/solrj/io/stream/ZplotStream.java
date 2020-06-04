@@ -111,10 +111,7 @@ public class ZplotStream extends TupleStream implements Expressible {
     if(out.hasNext()) {
       return out.next();
     } else {
-      Map m = new HashMap();
-      m.put("EOF", true);
-      Tuple t = new Tuple(m);
-      return t;
+      return Tuple.EOF();
     }
   }
 
@@ -208,7 +205,7 @@ public class ZplotStream extends TupleStream implements Expressible {
       }
 
       //Generate the x axis if the tuples contain y and not x
-      if (outTuples.get(0).fields.containsKey("y") && !outTuples.get(0).fields.containsKey("x")) {
+      if (outTuples.get(0).getFields().containsKey("y") && !outTuples.get(0).getFields().containsKey("x")) {
         int x = 0;
         for (Tuple tuple : outTuples) {
           tuple.put("x", x++);
@@ -312,14 +309,14 @@ public class ZplotStream extends TupleStream implements Expressible {
         if(list.get(0) instanceof Tuple) {
           List<Tuple> tlist = (List<Tuple>)o;
           Tuple tuple = tlist.get(0);
-          if(tuple.fields.containsKey("N")) {
+          if(tuple.getFields().containsKey("N")) {
             for(Tuple t : tlist) {
               Tuple outtuple = new Tuple();
               outtuple.put("x", Precision.round(((double)t.get("mean")), 2));
               outtuple.put("y", t.get("prob"));
               outTuples.add(outtuple);
             }
-          } else if(tuple.fields.containsKey("count")) {
+          } else if(tuple.getFields().containsKey("count")) {
             for(Tuple t : tlist) {
               Tuple outtuple = new Tuple();
               outtuple.put("x", t.get("value"));

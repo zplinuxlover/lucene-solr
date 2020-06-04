@@ -230,8 +230,8 @@ public class TupStream extends TupleStream implements Expressible {
       }
     }
     this.tup = new Tuple(values);
-    tup.fieldNames = fieldNames;
-    tup.fieldLabels = fieldLabels;
+    tup.setFieldNames(fieldNames);
+    tup.setFieldLabels(fieldLabels);
     // nothing to do here
   }
 

@@ -58,7 +58,7 @@ public class ExportHandler extends SearchHandler {
         "commit", "random", "knnSearch",
         // execution streams
         "parallel", "executor", "daemon"
-        // nocommit other streams?
+        // other streams?
     };
 
     public ExportHandlerStreamFactory() {
@@ -97,10 +97,6 @@ public class ExportHandler extends SearchHandler {
     initialStreamContext.setObjectCache(objectCache);
     initialStreamContext.put("core", this.coreName);
     initialStreamContext.put("solr-core", core);
-  }
-
-  public StreamContext getInitialStreamContext() {
-    return initialStreamContext;
   }
 
   @Override

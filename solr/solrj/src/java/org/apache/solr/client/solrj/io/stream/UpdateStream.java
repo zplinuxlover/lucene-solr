@@ -19,10 +19,8 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -298,7 +296,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   
   private SolrInputDocument convertTupleToSolrDocument(Tuple tuple) {
     SolrInputDocument doc = new SolrInputDocument();
-    for (Object field : tuple.fields.keySet()) {
+    for (Object field : tuple.getFields().keySet()) {
 
       if (! (field.equals(CommonParams.VERSION_FIELD) && pruneVersionField)) {
         Object value = tuple.get(field);

@@ -337,7 +337,7 @@ public class DaemonStream extends TupleStream implements Expressible {
               Tuple tuple = tupleStream.read();
               if (tuple.EOF) {
                 errors = 0; // Reset errors on successful run.
-                if (tuple.fields.containsKey("sleepMillis")) {
+                if (tuple.getFields().containsKey("sleepMillis")) {
                   this.sleepMillis = tuple.getLong("sleepMillis");
 
                   if(terminate && sleepMillis > 0) {

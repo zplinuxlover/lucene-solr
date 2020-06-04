@@ -195,8 +195,8 @@ public class PlotStream extends TupleStream implements Expressible {
       values.put("data", xy);
 
       Tuple tup = new Tuple(values);
-      tup.fieldLabels = fieldLabels;
-      tup.fieldNames = fieldNames;
+      tup.setFieldLabels(fieldLabels);
+      tup.setFieldNames(fieldNames);
       return tup;
     }
   }

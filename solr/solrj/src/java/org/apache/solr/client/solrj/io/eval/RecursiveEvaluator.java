@@ -144,8 +144,8 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
 
       Tuple tuple = (Tuple)value;
       Tuple newTuple = new Tuple();
-      for(Object o : tuple.fields.keySet()) {
-        Object v = tuple.fields.get(o);
+      for(Object o : tuple.getFields().keySet()) {
+        Object v = tuple.get(o);
         newTuple.put(o, normalizeOutputType(v));
       }
       return newTuple;

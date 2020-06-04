@@ -95,7 +95,7 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
         printWriter.write("<node id=\""+ xmlEscape(id)+"\"");
 
         List<String> outfields = new ArrayList();
-        Iterator<Object> keys = tuple.fields.keySet().iterator();
+        Iterator<Object> keys = tuple.getFields().keySet().iterator();
         while(keys.hasNext()) {
           String key = String.valueOf(keys.next());
           if(key.equals("node") || key.equals("ancestors") || key.equals("collection")) {

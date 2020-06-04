@@ -41,12 +41,27 @@ public class Tuple implements Cloneable, MapWriter {
    *  The EOF Tuple will not contain a record from the stream, but it may contain
    *  metrics/aggregates gathered by underlying streams.
    * */
-
   public boolean EOF;
+  /**
+   * When EXCEPTION field is true the Tuple marks an exception in the stream
+   * and the corresponding "EXCEPTION" field contains a related message.
+   */
   public boolean EXCEPTION;
 
+  /**
+   * Tuple fields.
+   * @deprecated use {@link #getFields()} instead of this public field.
+   */
   public Map<Object, Object> fields = new HashMap<>(2);
+  /**
+   * External serializable field names.
+   * @deprecated use {@link #getFieldNames()} instead of this public field.
+   */
   public List<String> fieldNames;
+  /**
+   * Mapping of external field names to internal tuple field names.
+   * @deprecated use {@link #getFieldLabels()} instead of this public field.
+   */
   public Map<String, String> fieldLabels;
 
   public Tuple() {
@@ -194,20 +209,59 @@ public class Tuple implements Cloneable, MapWriter {
     return (List<Double>)this.fields.get(key);
   }
 
+  /**
+   * Return all tuple fields and their values.
+   */
+  public Map<Object, Object> getFields() {
+    return this.fields;
+  }
+
+  /**
+   * Return all tuple fields.
+   * @deprecated use {@link #getFields()} instead.
+   */
+  @Deprecated(since = "8.6.0")
   public Map getMap() {
     return this.fields;
   }
 
+  /**
+   * This represents the mapping of external field labels to the tuple's
+   * internal field names if they are different from field names.
+   * @return field labels or null
+   */
+  public Map<String, String> getFieldLabels() {
+    return fieldLabels;
+  }
+
+  public void setFieldLabels(Map<String, String> fieldLabels) {
+    this.fieldLabels = fieldLabels;
+  }
+
+  /**
+   * A list of field names to serialize. This list (together with
+   * the mapping in {@link #getFieldLabels()} determines what tuple values
+   * are serialized and their external (serialized) names.
+   * @return list of external field names or null
+   */
+  public List<String> getFieldNames() {
+    return fieldNames;
+  }
+
+  public void setFieldNames(List<String> fieldNames) {
+    this.fieldNames = fieldNames;
+  }
+
   public List<Map> getMaps(Object key) {
-    return (List<Map>)this.fields.get(key);
+    return (List<Map>) this.fields.get(key);
   }
 
   public void setMaps(Object key, List<Map> maps) {
     this.fields.put(key, maps);
   }
 
-  public Map<String,Map> getMetrics() {
-    return (Map<String,Map>)this.fields.get(StreamParams.METRICS);
+  public Map<String, Map> getMetrics() {
+    return (Map<String, Map>) this.fields.get(StreamParams.METRICS);
   }
 
   public void setMetrics(Map<String, Map> metrics) {
@@ -221,7 +275,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
   
   public void merge(Tuple other) {
-    fields.putAll(other.getMap());
+    fields.putAll(other.getFields());
   }
 
   @Override
