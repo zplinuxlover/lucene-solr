@@ -46,6 +46,7 @@ public class TTestEvaluator extends RecursiveNumericEvaluator implements TwoValu
       double mean = ((Number) value1).doubleValue();
 
       if(value2 instanceof List) {
+        @SuppressWarnings({"unchecked"})
         List<Number> values = (List<Number>) value2;
         double[] samples = new double[values.size()];
         for (int i = 0; i < samples.length; i++) {
@@ -62,6 +63,7 @@ public class TTestEvaluator extends RecursiveNumericEvaluator implements TwoValu
         throw new IOException("Second parameter for ttest must be a double array");
       }
     } else if(value1 instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> values1 = (List<Number>)value1;
 
       double[] samples1 = new double[values1.size()];
@@ -71,6 +73,7 @@ public class TTestEvaluator extends RecursiveNumericEvaluator implements TwoValu
       }
 
       if(value2 instanceof List) {
+        @SuppressWarnings({"unchecked"})
         List<Number> values2 = (List<Number>) value2;
         double[] samples2 = new double[values2.size()];
 

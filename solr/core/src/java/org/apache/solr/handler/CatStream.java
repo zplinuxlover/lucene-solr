@@ -196,6 +196,7 @@ public class CatStream extends TupleStream implements Expressible {
     return false;
   }
 
+  @SuppressWarnings({"unchecked"})
   private Tuple fetchNextLineFromCurrentFile() {
     linesReturned++;
 

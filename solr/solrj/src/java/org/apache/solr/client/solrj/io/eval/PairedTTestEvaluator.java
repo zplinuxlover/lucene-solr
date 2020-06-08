@@ -43,6 +43,7 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
     TTest tTest = new TTest();
     Tuple tuple = new Tuple();
     if(value1 instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> values1 = (List<Number>)value1;
       double[] samples1 = new double[values1.size()];
 
@@ -51,6 +52,7 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
       }
 
       if(value2 instanceof List) {
+        @SuppressWarnings({"unchecked"})
         List<Number> values2 = (List<Number>) value2;
         double[] samples2 = new double[values2.size()];
 
