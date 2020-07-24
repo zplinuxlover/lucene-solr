@@ -212,7 +212,7 @@
 # Different limits can be set in solr.in.sh or your profile if you prefer as well.
 #SOLR_RECOMMENDED_OPEN_FILES=
 #SOLR_RECOMMENDED_MAX_PROCESSES=
-#SOLR_ULIMIT_CHECKS=
+SOLR_ULIMIT_CHECKS=false
 
 # When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 # list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
